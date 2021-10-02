@@ -1,54 +1,50 @@
 #[derive(PartialEq, PartialOrd, Debug)]
 pub enum Token {
-    Illegal,
-    EOF,
+    EndOfFile,
 
-    Semicolon,
-
-    Identifier(String),
+    String(String),
     Integer(String),
+    Float(String),
+    Identifier(String),
+    Bool(bool),
 
-    Assign,
-    Plus,
-    Minus,
-    HashBang,
-    Asterisk,
-    Slash,
+    // Delimiter
+    OpenParen,    // (
+    CloseParen,   // )
+    OpenBracket,  // [
+    CloseBracket, // ]
+    OpenBrace,    // {
+    CloseBrace,   // }
+
+    // Binary operators
+    Plus,               // +
+    Minus,              // -
+    Star,               // *
+    Slash,              // /
+    Percent,            // %
+    Ampersand,          // &
+    AmpersandAmpersand, // &&
+    Bar,                // |
+    BarBar,             // ||
+    Less,               // <
+    LessEqual,          // <=
+    Greater,            // >
+    GreaterEqual,       // >=
+
+    // Punctuation
+    Equal,      // =
+    EqualEqual, // ==
+    NotEqual,   // !=
 
     // Keywords
     Let,
+    Fn,
 }
 
-impl ToString for Token {
-    fn to_string(&self) -> String {
-        match self {
-            Token::Semicolon => ";".into(),
-            Token::Let => "let".into(),
-            Token::Identifier(i) => i.clone(),
-            Token::Integer(i) => i.into(),
-            Token::Assign => "=".into(),
-            Token::Plus => "+".into(),
-            Token::Minus => "-".into(),
-            Token::HashBang => "!".into(),
-            Token::Asterisk => "*".into(),
-            Token::Slash => "/".into(),
-            Token::EOF => "EOF".into(),
-            Token::Illegal => "Illegal".into(),
-        }
-    }
-}
-
-impl Token {
-    pub fn from_str(value: &str) -> Token {
-        Token::from(String::from(value))
-    }
-}
-
-impl From<String> for Token {
-    fn from(value: String) -> Self {
-        match value.as_str() {
-            "let" => Token::Let,
-            _ => Token::Identifier(value),
-        }
+pub(crate) fn str_to_keyword(word: &str) -> Option<Token> {
+    match word {
+        "let" => Some(Token::Let),
+        "fn" => Some(Token::Fn),
+        _ => None,
     }
 }

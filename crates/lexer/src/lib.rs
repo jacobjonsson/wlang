@@ -1,92 +1,204 @@
-mod identifier;
-mod token;
-mod whitespace;
+#![allow(dead_code)]
+#[cfg(test)]
+mod tests;
 
-use identifier::is_identifier_start;
+mod token;
+
 use token::Token;
 
+/// True if `c` is a whitespace
+fn is_whitespace(c: char) -> bool {
+    matches!(
+        c,
+        '\u{0009}' // Tab
+        | '\u{000B}' // Vertical tab
+        | '\u{0020}' // Space
+        | '\u{00A0}' // No-break space
+        | '\u{2003}' // Em space
+    )
+}
+
+/// True if `c` is a line terminator
+fn is_line_terminator(c: char) -> bool {
+    matches!(
+        c,
+        '\u{000A}' // Line feed
+        | '\u{000D}' // Carriage return
+        | '\u{2028}' // Line separator
+        | '\u{2029}' // Paragraph separator
+    )
+}
+
+/// True if `c` is valid as a first character of an identifier.
+fn is_identifier_star(c: char) -> bool {
+    ('a'..='z').contains(&c) || ('A'..='Z').contains(&c) || c == '_' || c == '$'
+}
+
+/// True if `c` is a valid non-first character of an identifier
+fn is_identifier_continue(c: char) -> bool {
+    ('a'..='z').contains(&c)
+        || ('A'..='Z').contains(&c)
+        || ('1'..='9').contains(&c)
+        || c == '_'
+        || c == '$'
+}
+
 pub struct Lexer {
-    input: String,
-    characters: Vec<(usize, char)>,
-    index: usize,
-    last_position: usize,
+    chars: Vec<char>,
+    current: usize,
+    char: char,
 
     pub token: Token,
-    pub token_start: usize,
-    pub token_end: usize,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Lexer {
-    /// Creates a new lexer instance
-    pub fn new(input: String) -> Lexer {
-        let characters: Vec<(usize, char)> = input.char_indices().collect();
-        let last_position: usize = characters
-            .last()
-            .map(|(idx, char)| idx + char.len_utf8())
-            .expect("Failed to extract the position of the last character");
+    pub fn new(source: &str) -> Lexer {
+        let mut lexer = Lexer {
+            chars: source.chars().collect(),
+            current: 0,
+            char: '\0',
+            token: Token::EndOfFile,
+            start: 0,
+            end: 0,
+        };
 
-        Lexer {
-            input,
-            characters,
-            index: 0,
-            last_position,
-            token: Token::EOF,
-            token_start: 0,
-            token_end: 0,
+        lexer.step();
+        lexer.next();
+
+        lexer
+    }
+
+    /// Increments the lexers internal state
+    fn step(&mut self) {
+        let char = self.chars.get(self.current);
+        if char == None {
+            self.char = '\0';
+            return;
         }
+
+        self.char = *char.unwrap();
+        self.end = self.current;
+        self.current += 1;
+    }
+
+    /// Slices from start to end and returns the string
+    fn slice(&self, start: usize, end: usize) -> String {
+        self.chars[start..end].into_iter().collect()
     }
 
     pub fn next(&mut self) {
-        self.skip_whitespace();
+        self.start = self.end;
+        self.token = Token::EndOfFile;
 
-        self.token_start = self.current_position();
-        let character = match self.current_character() {
-            Some(c) => c,
-            None => return,
+        match self.char {
+            '=' => {
+                self.step();
+                if self.char == '=' {
+                    self.step();
+                    self.token = Token::EqualEqual;
+                } else {
+                    self.token = Token::Equal;
+                }
+            }
+
+            '(' => {
+                self.step();
+                self.token = Token::OpenParen;
+            }
+
+            ')' => {
+                self.step();
+                self.token = Token::CloseParen;
+            }
+
+            '{' => {
+                self.step();
+                self.token = Token::OpenBrace;
+            }
+
+            '}' => {
+                self.step();
+                self.token = Token::CloseBrace;
+            }
+
+            '[' => {
+                self.step();
+                self.token = Token::OpenBracket;
+            }
+
+            ']' => {
+                self.step();
+                self.token = Token::CloseBracket;
+            }
+
+            '+' => {
+                self.step();
+                self.token = Token::Plus;
+            }
+
+            '-' => {
+                self.step();
+                self.token = Token::Minus;
+            }
+
+            '/' => {
+                self.step();
+                self.token = Token::Slash;
+            }
+
+            '*' => {
+                self.step();
+                self.token = Token::Star;
+            }
+
+            '>' => {
+                self.step();
+                if self.char == '=' {
+                    self.step();
+                    self.token = Token::GreaterEqual;
+                } else {
+                    self.token = Token::Greater;
+                }
+            }
+
+            '<' => {
+                self.step();
+                if self.char == '=' {
+                    self.step();
+                    self.token = Token::LessEqual;
+                } else {
+                    self.token = Token::Less;
+                }
+            }
+
+            '%' => {
+                self.step();
+                self.token = Token::Percent;
+            }
+
+            '|' => {
+                self.step();
+                if self.char == '|' {
+                    self.step();
+                    self.token = Token::BarBar;
+                } else {
+                    self.token = Token::Bar;
+                }
+            }
+
+            '&' => {
+                self.step();
+                if self.char == '&' {
+                    self.step();
+                    self.token = Token::AmpersandAmpersand;
+                } else {
+                    self.token = Token::Ampersand;
+                }
+            }
+
+            c => panic!("Does not know how to handle: {}", c),
         };
-
-        self.token = match character {
-            c if is_identifier_start(c) => self.scan_identifier(),
-            '0' => todo!(),
-            '1'..='9' => todo!(),
-            _ => Token::EOF,
-        };
-
-        self.token_end = self.current_position();
-    }
-
-    /// Returns the current character
-    fn current_character(&self) -> Option<char> {
-        match self.characters.get(self.index) {
-            Some(v) => Some(v.1),
-            None => None,
-        }
-    }
-
-    /// Returns the next character
-    fn next_character(&self) -> Option<char> {
-        match self.characters.get(self.index + 1) {
-            Some(v) => Some(v.1),
-            None => None,
-        }
-    }
-
-    /// Returns the current position in the source
-    /// If the current character does not exist the we return
-    /// the position of the last character instead.
-    fn current_position(&self) -> usize {
-        match self.characters.get(self.index) {
-            Some(v) => v.0,
-            None => self.last_position,
-        }
-    }
-
-    /// Returns the position in the source of the
-    /// previous character.
-    fn previous_position(&self) -> usize {
-        match self.characters.get(self.index - 1) {
-            Some(v) => v.0,
-            None => self.last_position,
-        }
     }
 }
