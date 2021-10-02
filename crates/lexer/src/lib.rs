@@ -72,23 +72,36 @@ impl Lexer {
 
     /// Increments the lexers internal state
     fn step(&mut self) {
-        let char = self.chars.get(self.current);
+        let mut char = self.chars.get(self.current).map(|c| *c);
         if char == None {
-            self.char = '\0';
-            return;
+            char = Some('\0');
         }
 
-        self.char = *char.unwrap();
+        self.char = char.unwrap();
         self.end = self.current;
         self.current += 1;
     }
 
     /// Slices from start to end and returns the string
-    fn slice(&self, start: usize, end: usize) -> String {
-        self.chars[start..end].into_iter().collect()
+    fn raw(&self) -> String {
+        self.chars[self.start..self.end].into_iter().collect()
     }
 
     pub fn next(&mut self) {
+        if is_whitespace(self.char) {
+            self.step();
+            while is_whitespace(self.char) {
+                self.step();
+            }
+        }
+
+        if is_line_terminator(self.char) {
+            self.step();
+            while is_line_terminator(self.char) {
+                self.step();
+            }
+        }
+
         self.start = self.end;
         self.token = Token::EndOfFile;
 
@@ -101,6 +114,11 @@ impl Lexer {
                 } else {
                     self.token = Token::Equal;
                 }
+            }
+
+            ';' => {
+                self.step();
+                self.token = Token::Semicolon;
             }
 
             '(' => {
@@ -204,7 +222,7 @@ impl Lexer {
                     self.step();
                 }
 
-                let value = self.slice(self.start, self.current);
+                let value = self.raw();
 
                 let mut token = str_to_keyword(&value);
                 if token == None {

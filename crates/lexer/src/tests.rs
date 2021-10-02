@@ -24,6 +24,7 @@ fn test_punctuation() {
         (">=", Token::GreaterEqual),
         ("<", Token::Less),
         ("<=", Token::LessEqual),
+        (";", Token::Semicolon),
     ];
 
     for (source, token) in tests {
@@ -36,6 +37,7 @@ fn test_punctuation() {
 fn test_identifier() {
     let tests = vec![
         ("a", Token::Identifier("a".into())),
+        ("a    ", Token::Identifier("a".into())),
         ("_a", Token::Identifier("_a".into())),
         ("$a", Token::Identifier("$a".into())),
     ];
@@ -52,6 +54,25 @@ fn test_keyword() {
 
     for (source, token) in tests {
         let lexer = Lexer::new(source);
+        assert_eq!(lexer.token, token);
+    }
+}
+
+#[test]
+fn test_contextual() {
+    let source = "let a = b + c;";
+    let mut lexer = Lexer::new(source);
+    assert_eq!(lexer.token, Token::Let);
+    let tokens = vec![
+        Token::Identifier("a".into()),
+        Token::Equal,
+        Token::Identifier("b".into()),
+        Token::Plus,
+        Token::Identifier("c".into()),
+        Token::Semicolon,
+    ];
+    for token in tokens {
+        lexer.next();
         assert_eq!(lexer.token, token);
     }
 }
