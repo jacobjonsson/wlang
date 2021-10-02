@@ -31,3 +31,27 @@ fn test_punctuation() {
         assert_eq!(lexer.token, token);
     }
 }
+
+#[test]
+fn test_identifier() {
+    let tests = vec![
+        ("a", Token::Identifier("a".into())),
+        ("_a", Token::Identifier("_a".into())),
+        ("$a", Token::Identifier("$a".into())),
+    ];
+
+    for (source, token) in tests {
+        let lexer = Lexer::new(source);
+        assert_eq!(lexer.token, token);
+    }
+}
+
+#[test]
+fn test_keyword() {
+    let tests = vec![("let", Token::Let), ("fn", Token::Fn)];
+
+    for (source, token) in tests {
+        let lexer = Lexer::new(source);
+        assert_eq!(lexer.token, token);
+    }
+}

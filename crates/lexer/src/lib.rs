@@ -6,6 +6,8 @@ mod token;
 
 use token::Token;
 
+use crate::token::str_to_keyword;
+
 /// True if `c` is a whitespace
 fn is_whitespace(c: char) -> bool {
     matches!(
@@ -13,7 +15,6 @@ fn is_whitespace(c: char) -> bool {
         '\u{0009}' // Tab
         | '\u{000B}' // Vertical tab
         | '\u{0020}' // Space
-        | '\u{00A0}' // No-break space
         | '\u{2003}' // Em space
     )
 }
@@ -25,7 +26,6 @@ fn is_line_terminator(c: char) -> bool {
         '\u{000A}' // Line feed
         | '\u{000D}' // Carriage return
         | '\u{2028}' // Line separator
-        | '\u{2029}' // Paragraph separator
     )
 }
 
@@ -196,6 +196,21 @@ impl Lexer {
                 } else {
                     self.token = Token::Ampersand;
                 }
+            }
+
+            c if is_identifier_star(c) => {
+                self.step();
+                while is_identifier_continue(self.char) {
+                    self.step();
+                }
+
+                let value = self.slice(self.start, self.current);
+
+                let mut token = str_to_keyword(&value);
+                if token == None {
+                    token = Some(Token::Identifier(value));
+                }
+                self.token = token.unwrap();
             }
 
             c => panic!("Does not know how to handle: {}", c),
