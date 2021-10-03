@@ -54,6 +54,7 @@ fn test_keyword() {
         ("let", Token::Let),
         ("fn", Token::Fn),
         ("const", Token::Const),
+        ("component", Token::Component),
     ];
 
     for (source, token) in tests {

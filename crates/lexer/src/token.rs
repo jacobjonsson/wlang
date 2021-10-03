@@ -41,6 +41,7 @@ pub enum Token {
     Let,
     Const,
     Fn,
+    Component,
 }
 
 pub(crate) fn str_to_keyword(word: &str) -> Option<Token> {
@@ -48,6 +49,7 @@ pub(crate) fn str_to_keyword(word: &str) -> Option<Token> {
         "let" => Some(Token::Let),
         "fn" => Some(Token::Fn),
         "const" => Some(Token::Const),
+        "component" => Some(Token::Component),
         _ => None,
     }
 }
