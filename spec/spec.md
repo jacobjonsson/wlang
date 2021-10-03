@@ -1,6 +1,6 @@
 ```
-import wlang::http;
-import wlang::ui::{List, ForEach, Text};
+use wlang::http;
+use wlang::ui::{List, ForEach, Text};
 
 struct User {
     name: String,
