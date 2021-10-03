@@ -171,6 +171,16 @@ impl Lexer {
                 self.token = Token::Star;
             }
 
+            ':' => {
+                self.step();
+                if self.char == ':' {
+                    self.step();
+                    self.token = Token::ColonColon;
+                } else {
+                    self.token = Token::Colon;
+                }
+            }
+
             '>' => {
                 self.step();
                 if self.char == '=' {

@@ -16,6 +16,8 @@ pub enum Token {
     OpenBrace,    // {
     CloseBrace,   // }
     Semicolon,    // ;
+    Colon,        // :
+    ColonColon,   // ::
 
     // Binary operators
     Plus,               // +

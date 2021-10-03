@@ -1,5 +1,5 @@
 ```
-import wlang::{http, Error};
+import wlang::http;
 import wlang::ui::{List, ForEach, Text};
 
 struct User {
@@ -7,7 +7,7 @@ struct User {
     email: String,
 }
 
-async fn fetchUsers() -> Result<Vec<User>, Error> {
+async fn fetchUsers() -> Result<Vec<User>, http::Error> {
     return http::get("/users").decode(User);
 }
 
