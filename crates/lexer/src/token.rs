@@ -39,6 +39,7 @@ pub enum Token {
 
     // Keywords
     Let,
+    Const,
     Fn,
 }
 
@@ -46,6 +47,7 @@ pub(crate) fn str_to_keyword(word: &str) -> Option<Token> {
     match word {
         "let" => Some(Token::Let),
         "fn" => Some(Token::Fn),
+        "const" => Some(Token::Const),
         _ => None,
     }
 }

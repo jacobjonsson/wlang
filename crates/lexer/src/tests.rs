@@ -50,7 +50,11 @@ fn test_identifier() {
 
 #[test]
 fn test_keyword() {
-    let tests = vec![("let", Token::Let), ("fn", Token::Fn)];
+    let tests = vec![
+        ("let", Token::Let),
+        ("fn", Token::Fn),
+        ("const", Token::Const),
+    ];
 
     for (source, token) in tests {
         let lexer = Lexer::new(source);
