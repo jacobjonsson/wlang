@@ -44,6 +44,9 @@ pub enum Token {
     Const,
     Fn,
     Component,
+    Use,
+    Pub,
+    Async,
 }
 
 pub(crate) fn str_to_keyword(word: &str) -> Option<Token> {
@@ -52,6 +55,9 @@ pub(crate) fn str_to_keyword(word: &str) -> Option<Token> {
         "fn" => Some(Token::Fn),
         "const" => Some(Token::Const),
         "component" => Some(Token::Component),
+        "pub" => Some(Token::Pub),
+        "use" => Some(Token::Use),
+        "async" => Some(Token::Async),
         _ => None,
     }
 }
