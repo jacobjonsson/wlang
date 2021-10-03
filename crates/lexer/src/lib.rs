@@ -72,11 +72,6 @@ impl Lexer {
 
     /// Increments the lexers internal state
     fn step(&mut self) {
-        let a = || {
-            println!("Hej");
-            "b"
-        };
-
         let mut char = self.chars.get(self.current).map(|c| *c);
         if char == None {
             char = Some('\0');
