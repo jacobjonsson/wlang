@@ -27,6 +27,7 @@ fn test_punctuation() {
         (";", Token::Semicolon),
         (":", Token::Colon),
         ("::", Token::ColonColon),
+        (".", Token::Dot),
     ];
 
     for (source, token) in tests {

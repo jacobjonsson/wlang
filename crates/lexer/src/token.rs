@@ -18,6 +18,7 @@ pub enum Token {
     Semicolon,    // ;
     Colon,        // :
     ColonColon,   // ::
+    Dot,          // .
 
     // Binary operators
     Plus,               // +
