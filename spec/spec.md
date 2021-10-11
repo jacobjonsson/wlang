@@ -1,28 +1,65 @@
 ```
-use wlang::http;
-use wlang::ui::{List, ForEach, Text};
-
-struct User {
-    name: String,
-    email: String,
+// The props block defines what arguments can be provided to the component
+props {
+    name: string
+    children:
 }
 
-async fn fetchUsers() -> Result<Vec<User>, http::Error> {
-    return http::get("/users").decode(User);
-}
+// The script block defines runtime behavior
+script {
+    // A stateful variable is created with the state keyword.
+    state a: u8 = 1;
 
-pub async component UserList() {
-    let users = fetchUsers().await;
+    // A non-stateful variable is created with the let keyword.
+    let b: u8 = 2;
 
-    if let Error(err) = users {
-        return Text("Oh no, something went wrong");
+    // Non-stateful variables are immutable by default, to make it mutable, use the mut keyword.
+    let mut c: u8 = 3;
+
+    // Functions are created with the fn keyword.
+    fn increment() {
+        // Assigning to a stateful keyword will
+        a += 1;
     }
 
-    return List(|| {
-        ForEach(users, |user| {
-            Text(user.name).color("gray-700);
-            Text(user.email).color("gray-300);
-        })
-    })
+    // Effect blocks run whenever a stateful variable referenced inside the block changes
+    effect {
+        // Will be executed whenever the stateful variable a changes
+        console.log(a);
+    }
+
+    // The mount blocks run when the component first mounts
+    mount {
+        console.log("Hello world");
+    }
+
+    // The update blocks run when the component updates
+    update {
+        console.log("Hello world, again");
+    }
+
+    // The destroy blocks run before the component will be destroyed
+    destroy {
+        console.log("Bye bye world");
+    }
+}
+
+// The view block defines the html-like view
+view {
+    <h1>Hello {props.name}</h1>
+
+    <button>Click to increment</button>
+
+    <p>Count</p>
+
+    {#if a > 10}
+        <p>You hit the jackpot!!</p>
+    {/if}
+}
+
+style {
+    .hello {
+        background-color: "red";
+    }
 }
 ```

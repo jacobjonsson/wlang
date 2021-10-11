@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 #[cfg(test)]
 mod tests;
-
 mod token;
 
-use token::Token;
+use std::panic;
 
 use crate::token::str_to_keyword;
+pub use token::Token;
 
 /// True if `c` is a whitespace
 fn is_whitespace(c: char) -> bool {
@@ -82,9 +82,16 @@ impl Lexer {
         self.current += 1;
     }
 
-    /// Slices from start to end and returns the string
+    /// Returns the raw string of the current token
     fn raw(&self) -> String {
         self.chars[self.start..self.end].into_iter().collect()
+    }
+
+    pub fn expect(&mut self, token: Token) {
+        if self.token != token {
+            panic!("Expected {:?} but got {:?}", token, self.token);
+        }
+        self.next();
     }
 
     pub fn next(&mut self) {
