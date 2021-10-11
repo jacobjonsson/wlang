@@ -1,6 +1,7 @@
 mod cursor;
 mod error;
 mod identifier;
+mod number;
 mod string;
 mod whitespace;
 
@@ -34,6 +35,8 @@ impl<'a> Lexer<'a> {
             c if is_identifier_start(c) => self.scan_identifier()?,
 
             '"' => self.scan_string()?,
+
+            '0'..='9' => self.scan_number()?,
 
             '(' => {
                 self.cursor.bump();
