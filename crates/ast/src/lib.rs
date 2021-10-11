@@ -10,4 +10,21 @@ pub struct Script {}
 
 pub struct Style {}
 
-pub struct View {}
+pub struct View {
+    children: Vec<ViewNode>,
+}
+
+pub enum ViewNode {
+    Text {
+        data: String,
+    },
+    Element {
+        name: String,
+        attributes: Vec<ViewNodeElementAttribute>,
+    },
+}
+
+pub struct ViewNodeElementAttribute {
+    name: String,
+    value: (),
+}

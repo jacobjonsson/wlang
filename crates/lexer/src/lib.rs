@@ -1,259 +1,75 @@
-#![allow(dead_code)]
-#[cfg(test)]
-mod tests;
-mod token;
+mod cursor;
+mod error;
 
-use std::panic;
+use cursor::Cursor;
+pub use error::LexerError;
+use token::TokenKind;
 
-use crate::token::str_to_keyword;
-pub use token::Token;
+pub type LexerResult<T> = Result<T, LexerError>;
 
-/// True if `c` is a whitespace
-fn is_whitespace(c: char) -> bool {
-    matches!(
-        c,
-        '\u{0009}' // Tab
-        | '\u{000B}' // Vertical tab
-        | '\u{0020}' // Space
-        | '\u{2003}' // Em space
-    )
+pub struct Lexer<'a> {
+    cursor: Cursor<'a>,
 }
 
-/// True if `c` is a line terminator
-fn is_line_terminator(c: char) -> bool {
-    matches!(
-        c,
-        '\u{000A}' // Line feed
-        | '\u{000D}' // Carriage return
-        | '\u{2028}' // Line separator
-    )
-}
-
-/// True if `c` is valid as a first character of an identifier.
-fn is_identifier_star(c: char) -> bool {
-    ('a'..='z').contains(&c) || ('A'..='Z').contains(&c) || c == '_' || c == '$'
-}
-
-/// True if `c` is a valid non-first character of an identifier
-fn is_identifier_continue(c: char) -> bool {
-    ('a'..='z').contains(&c)
-        || ('A'..='Z').contains(&c)
-        || ('1'..='9').contains(&c)
-        || c == '_'
-        || c == '$'
-}
-
-pub struct Lexer {
-    chars: Vec<char>,
-    current: usize,
-    char: char,
-
-    pub token: Token,
-    pub start: usize,
-    pub end: usize,
-}
-
-impl Lexer {
+impl<'a> Lexer<'a> {
     pub fn new(source: &str) -> Lexer {
-        let mut lexer = Lexer {
-            chars: source.chars().collect(),
-            current: 0,
-            char: '\0',
-            token: Token::EndOfFile,
-            start: 0,
-            end: 0,
+        Lexer {
+            cursor: Cursor::new(source),
+        }
+    }
+
+    pub fn next(&mut self) -> Result<Option<TokenKind>, LexerError> {
+        let current = match self.cursor.current() {
+            Some(c) => c,
+            None => return Ok(None),
         };
 
-        lexer.step();
-        lexer.next();
-
-        lexer
-    }
-
-    /// Increments the lexers internal state
-    fn step(&mut self) {
-        let mut char = self.chars.get(self.current).map(|c| *c);
-        if char == None {
-            char = Some('\0');
-        }
-
-        self.char = char.unwrap();
-        self.end = self.current;
-        self.current += 1;
-    }
-
-    /// Returns the raw string of the current token
-    fn raw(&self) -> String {
-        self.chars[self.start..self.end].into_iter().collect()
-    }
-
-    pub fn expect(&mut self, token: Token) {
-        if self.token != token {
-            panic!("Expected {:?} but got {:?}", token, self.token);
-        }
-        self.next();
-    }
-
-    pub fn next(&mut self) {
-        if is_whitespace(self.char) {
-            self.step();
-            while is_whitespace(self.char) {
-                self.step();
-            }
-        }
-
-        if is_line_terminator(self.char) {
-            self.step();
-            while is_line_terminator(self.char) {
-                self.step();
-            }
-        }
-
-        self.start = self.end;
-        self.token = Token::EndOfFile;
-
-        match self.char {
-            '=' => {
-                self.step();
-                if self.char == '=' {
-                    self.step();
-                    self.token = Token::EqualEqual;
-                } else {
-                    self.token = Token::Equal;
-                }
-            }
-
-            ';' => {
-                self.step();
-                self.token = Token::Semicolon;
-            }
-
-            '(' => {
-                self.step();
-                self.token = Token::OpenParen;
-            }
-
-            ')' => {
-                self.step();
-                self.token = Token::CloseParen;
-            }
-
-            '{' => {
-                self.step();
-                self.token = Token::OpenBrace;
-            }
-
-            '}' => {
-                self.step();
-                self.token = Token::CloseBrace;
-            }
-
-            '[' => {
-                self.step();
-                self.token = Token::OpenBracket;
-            }
-
-            ']' => {
-                self.step();
-                self.token = Token::CloseBracket;
-            }
-
+        let token = match current {
             '+' => {
-                self.step();
-                self.token = Token::Plus;
-            }
-
-            '-' => {
-                self.step();
-                self.token = Token::Minus;
-            }
-
-            '/' => {
-                self.step();
-                self.token = Token::Slash;
-            }
-
-            '*' => {
-                self.step();
-                self.token = Token::Star;
-            }
-
-            '.' => {
-                self.step();
-                self.token = Token::Dot;
-            }
-
-            ':' => {
-                self.step();
-                if self.char == ':' {
-                    self.step();
-                    self.token = Token::ColonColon;
+                self.cursor.bump();
+                if self.cursor.current() == Some('=') {
+                    self.cursor.bump();
+                    TokenKind::PlusEqual
                 } else {
-                    self.token = Token::Colon;
-                }
-            }
-
-            '>' => {
-                self.step();
-                if self.char == '=' {
-                    self.step();
-                    self.token = Token::GreaterEqual;
-                } else {
-                    self.token = Token::Greater;
-                }
-            }
-
-            '<' => {
-                self.step();
-                if self.char == '=' {
-                    self.step();
-                    self.token = Token::LessEqual;
-                } else {
-                    self.token = Token::Less;
+                    TokenKind::Plus
                 }
             }
 
             '%' => {
-                self.step();
-                self.token = Token::Percent;
-            }
-
-            '|' => {
-                self.step();
-                if self.char == '|' {
-                    self.step();
-                    self.token = Token::BarBar;
+                self.cursor.bump();
+                if self.cursor.current() == Some('=') {
+                    self.cursor.bump();
+                    TokenKind::PercentEqual
                 } else {
-                    self.token = Token::Bar;
+                    TokenKind::Percent
                 }
             }
 
-            '&' => {
-                self.step();
-                if self.char == '&' {
-                    self.step();
-                    self.token = Token::AmpersandAmpersand;
-                } else {
-                    self.token = Token::Ampersand;
-                }
-            }
-
-            c if is_identifier_star(c) => {
-                self.step();
-                while is_identifier_continue(self.char) {
-                    self.step();
-                }
-
-                let value = self.raw();
-
-                let mut token = str_to_keyword(&value);
-                if token == None {
-                    token = Some(Token::Identifier(value));
-                }
-                self.token = token.unwrap();
-            }
-
-            c => panic!("Does not know how to handle: {}", c),
+            _ => return Err(LexerError::UnexpectedToken),
         };
+
+        Ok(Some(token))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use token::TokenKind;
+
+    use crate::Lexer;
+
+    #[test]
+    fn test_punctuation() {
+        let tests = vec![
+            ("+", TokenKind::Plus),
+            ("+=", TokenKind::PlusEqual),
+            ("%", TokenKind::Percent),
+            ("%=", TokenKind::PercentEqual),
+        ];
+
+        for (source, token) in tests {
+            let mut lexer = Lexer::new(source);
+            assert_eq!(lexer.next(), Ok(Some(token)))
+        }
     }
 }

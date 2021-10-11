@@ -44,9 +44,9 @@ script {
     }
 }
 
-// The view block defines the html-like view
+// The view block defines the html
 view {
-    <h1>Hello {props.name}</h1>
+    <h1 on:>Hello {props.name}</h1>
 
     <button>Click to increment</button>
 
@@ -57,6 +57,8 @@ view {
     {/if}
 }
 
+// The style block defined the css
+// Styles defined inside of this block is scoped to this component
 style {
     .hello {
         background-color: "red";

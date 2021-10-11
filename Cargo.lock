@@ -88,6 +88,7 @@ name = "lexer"
 version = "0.1.0"
 dependencies = [
  "ast",
+ "token",
 ]
 
 [[package]]
@@ -204,6 +205,10 @@ dependencies = [
  "libc",
  "winapi",
 ]
+
+[[package]]
+name = "token"
+version = "0.1.0"
 
 [[package]]
 name = "unicode-xid"
