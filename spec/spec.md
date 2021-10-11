@@ -46,9 +46,9 @@ script {
 
 // The view block defines the html
 view {
-    <h1 on:>Hello {props.name}</h1>
+    <h1>Hello {props.name}</h1>
 
-    <button>Click to increment</button>
+    <button on:click={increment}>Click to increment</button>
 
     <p>Count</p>
 
