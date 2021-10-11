@@ -1,11 +1,10 @@
 #![allow(dead_code)]
-
 use std::str::CharIndices;
 
 pub struct Cursor<'a> {
     source: &'a str,
     chars: CharIndices<'a>,
-    last_post: usize,
+    last_position: usize,
 }
 
 impl<'a> Cursor<'a> {
@@ -13,7 +12,7 @@ impl<'a> Cursor<'a> {
         Cursor {
             source,
             chars: source.char_indices(),
-            last_post: 0,
+            last_position: 0,
         }
     }
 
@@ -21,8 +20,12 @@ impl<'a> Cursor<'a> {
         self.chars.clone().nth(0).map(|i| i.1)
     }
 
-    pub fn current_position(&self) -> Option<usize> {
-        self.chars.clone().nth(0).map(|i| i.0)
+    pub fn current_position(&self) -> usize {
+        self.chars
+            .clone()
+            .nth(0)
+            .map(|i| i.0)
+            .unwrap_or(self.last_position)
     }
 
     pub fn peek(&self) -> Option<char> {
@@ -36,7 +39,7 @@ impl<'a> Cursor<'a> {
     // Increments the cursor
     pub fn bump(&mut self) {
         if let Some((i, c)) = self.chars.next() {
-            self.last_post = i + c.len_utf8();
+            self.last_position = i + c.len_utf8();
         } else {
             unreachable!("bump should not be called when current() = None");
         }

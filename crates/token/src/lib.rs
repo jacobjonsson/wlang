@@ -33,6 +33,7 @@ pub enum TokenKind {
     MinusEqual,   // -=,
     StarEqual,    // *=,
     PercentEqual, // %=,
+    SlashEqual,   // /=
 
     // Comparison
     EqualEqual,         // ==
@@ -79,6 +80,7 @@ impl TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
+            TokenKind::SlashEqual => "/=",
             TokenKind::String { value } => value,
             TokenKind::Integer { value } => value,
             TokenKind::Float { value } => value,
