@@ -18,10 +18,10 @@ pub fn is_identifier_continue(c: char) -> bool {
 }
 
 impl<'a> Lexer<'a> {
-    pub(crate) fn scan_identifier(&mut self) -> LexerResult<TokenKind> {
-        let start = self.cursor.current_position();
+    pub(crate) fn scan_identifier(&mut self) -> LexerResult<&'a str> {
+        let start = self.current_position();
         loop {
-            let character = match self.cursor.current() {
+            let character = match self.current_character() {
                 Some(c) => c,
                 None => break,
             };
@@ -30,12 +30,11 @@ impl<'a> Lexer<'a> {
                 break;
             }
 
-            self.cursor.bump();
+            self.index += 1;
         }
 
-        let end = self.cursor.current_position();
-        let identifier = self.cursor.slice(start, end);
-        Ok(TokenKind::from_string(identifier.into()))
+        let end = self.current_position();
+        Ok(self.slice(start, end))
     }
 }
 
@@ -50,8 +49,9 @@ mod tests {
 
         for (source, name) in tests {
             let mut lexer = Lexer::new(source);
-            let expected_token = TokenKind::Identifier { name: name.into() };
-            assert_eq!(lexer.next(), Ok(Some(expected_token)));
+            assert_eq!(lexer.next(), Ok(()));
+            assert_eq!(lexer.token, TokenKind::Identifier);
+            assert_eq!(lexer.token_text, name);
         }
     }
 
@@ -67,7 +67,8 @@ mod tests {
 
         for (source, token) in tests {
             let mut lexer = Lexer::new(source);
-            assert_eq!(lexer.next(), Ok(Some(token)));
+            assert_eq!(lexer.next(), Ok(()));
+            assert_eq!(lexer.token, token);
         }
     }
 }

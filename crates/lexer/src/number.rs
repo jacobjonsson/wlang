@@ -4,21 +4,21 @@ use crate::{identifier::is_identifier_start, Lexer, LexerError, LexerResult};
 
 impl<'a> Lexer<'a> {
     pub(crate) fn scan_number(&mut self) -> LexerResult<TokenKind> {
-        let start = self.cursor.current_position();
+        let start = self.current_position();
         let mut is_floating_point = false;
         loop {
-            let character = match self.cursor.current() {
+            let character = match self.current_character() {
                 Some(c) => c,
                 None => break,
             };
 
             if matches!(character, '0'..='9') {
-                self.cursor.bump();
+                self.index += 1;
                 continue;
             }
 
             if character == '_' {
-                self.cursor.bump();
+                self.index += 1;
                 continue;
             }
 
@@ -28,7 +28,7 @@ impl<'a> Lexer<'a> {
                 }
 
                 is_floating_point = true;
-                self.cursor.bump();
+                self.index += 1;
                 continue;
             }
 
@@ -39,12 +39,12 @@ impl<'a> Lexer<'a> {
             break;
         }
 
-        let end = self.cursor.current_position();
-        let text = self.cursor.slice(start, end).replace("_", "");
+        let end = self.current_position();
+        self.token_text = self.slice(start, end);
         if is_floating_point {
-            Ok(TokenKind::Float { value: text })
+            Ok(TokenKind::Float)
         } else {
-            Ok(TokenKind::Integer { value: text })
+            Ok(TokenKind::Integer)
         }
     }
 }
@@ -57,27 +57,25 @@ mod tests {
 
     #[test]
     fn test_integer() {
-        let tests = [("123", "123"), ("1_2_3_4_5", "12345")];
+        let tests = [("123", "123"), ("1_2_3_4_5", "1_2_3_4_5")];
 
         for (source, value) in tests {
             let mut lexer = Lexer::new(source);
-            let expected_token = TokenKind::Integer {
-                value: value.into(),
-            };
-            assert_eq!(lexer.next(), Ok(Some(expected_token)))
+            assert_eq!(lexer.next(), Ok(()));
+            assert_eq!(lexer.token, TokenKind::Integer);
+            assert_eq!(lexer.token_text, value);
         }
     }
 
     #[test]
     fn test_float() {
-        let tests = [("1.23", "1.23"), ("1_2_3_4_5.3", "12345.3")];
+        let tests = [("1.23", "1.23"), ("1_2_3_4_5.3", "1_2_3_4_5.3")];
 
         for (source, value) in tests {
             let mut lexer = Lexer::new(source);
-            let expected_token = TokenKind::Float {
-                value: value.into(),
-            };
-            assert_eq!(lexer.next(), Ok(Some(expected_token)))
+            assert_eq!(lexer.next(), Ok(()));
+            assert_eq!(lexer.token, TokenKind::Float);
+            assert_eq!(lexer.token_text, value);
         }
     }
 

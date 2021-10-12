@@ -1,19 +1,32 @@
-#![allow(dead_code)]
-
+#[derive(PartialEq, PartialOrd, Debug)]
 pub struct Component {
-    script: Script,
-    style: Style,
-    view: View,
+    pub script: Script,
+    pub style: Style,
+    pub view: View,
 }
 
-pub struct Script {}
+#[derive(PartialEq, PartialOrd, Debug)]
+pub struct Script {
+    pub statements: Vec<ScriptStatement>,
+}
 
-pub struct Style {}
+#[derive(PartialEq, PartialOrd, Debug)]
+pub enum ScriptStatement {}
 
+#[derive(PartialEq, PartialOrd, Debug)]
+pub struct Style {
+    pub rules: Vec<StyleRule>,
+}
+
+#[derive(PartialEq, PartialOrd, Debug)]
+pub enum StyleRule {}
+
+#[derive(PartialEq, PartialOrd, Debug)]
 pub struct View {
-    children: Vec<ViewNode>,
+    pub children: Vec<ViewNode>,
 }
 
+#[derive(PartialEq, PartialOrd, Debug)]
 pub enum ViewNode {
     Text {
         data: String,
@@ -24,7 +37,8 @@ pub enum ViewNode {
     },
 }
 
+#[derive(PartialEq, PartialOrd, Debug)]
 pub struct ViewNodeElementAttribute {
-    name: String,
-    value: (),
+    pub name: String,
+    pub value: (),
 }

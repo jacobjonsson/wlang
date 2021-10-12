@@ -5,11 +5,11 @@ use crate::{whitespace::is_line_terminator, Lexer, LexerError, LexerResult};
 impl<'a> Lexer<'a> {
     pub(crate) fn scan_string(&mut self) -> LexerResult<TokenKind> {
         // Skip the leading quote
-        self.cursor.bump();
-        let start = self.cursor.current_position();
+        self.index += 1;
+        let start = self.current_position();
 
         loop {
-            let character = match self.cursor.current() {
+            let character = match self.current_character() {
                 Some(c) => c,
                 None => return Err(LexerError::UnterminatedStringLiteral),
             };
@@ -22,15 +22,15 @@ impl<'a> Lexer<'a> {
                 break;
             }
 
-            self.cursor.bump();
+            self.index += 1;
         }
 
         // Grab the end position before we skip over the trailing quote.
-        let end = self.cursor.current_position();
-        self.cursor.bump();
+        let end = self.current_position();
+        self.index += 1;
 
-        let text = self.cursor.slice(start, end);
-        Ok(TokenKind::String { value: text.into() })
+        self.token_text = self.slice(start, end);
+        Ok(TokenKind::String)
     }
 }
 
@@ -45,8 +45,9 @@ mod tests {
 
         for (source, text) in tests {
             let mut lexer = Lexer::new(source);
-            let expected_token = TokenKind::String { value: text.into() };
-            assert_eq!(lexer.next(), Ok(Some(expected_token)));
+            assert_eq!(lexer.next(), Ok(()));
+            assert_eq!(lexer.token, TokenKind::String);
+            assert_eq!(lexer.token_text, text);
         }
     }
 

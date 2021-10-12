@@ -2,11 +2,13 @@ use std::fmt;
 
 #[derive(PartialEq, PartialOrd, Debug)]
 pub enum TokenKind {
-    Identifier { name: String },
-    String { value: String },
-    Integer { value: String },
-    Float { value: String },
-    Bool { value: bool },
+    EndOfFile,
+
+    Identifier,
+    String,
+    Integer,
+    Float,
+    Boolean,
 
     // Delimiter
     OpenParen,    // (
@@ -59,8 +61,8 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
-    pub fn from_string(word: String) -> TokenKind {
-        match word.as_str() {
+    pub fn from_str(word: &str) -> TokenKind {
+        match word {
             "let" => TokenKind::Let,
             "fn" => TokenKind::Fn,
             "view" => TokenKind::View,
@@ -70,9 +72,9 @@ impl TokenKind {
             "use" => TokenKind::Use,
             "async" => TokenKind::Async,
             "mut" => TokenKind::Mut,
-            "true" => TokenKind::Bool { value: true },
-            "false" => TokenKind::Bool { value: false },
-            _ => TokenKind::Identifier { name: word },
+            "true" => TokenKind::Boolean,
+            "false" => TokenKind::Boolean,
+            _ => TokenKind::Identifier,
         }
     }
 }
@@ -80,18 +82,13 @@ impl TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
+            TokenKind::EndOfFile => "EndOfFile",
             TokenKind::SlashEqual => "/=",
-            TokenKind::String { value } => value,
-            TokenKind::Integer { value } => value,
-            TokenKind::Float { value } => value,
-            TokenKind::Identifier { name } => name,
-            TokenKind::Bool { value } => {
-                if *value {
-                    "true"
-                } else {
-                    "false"
-                }
-            }
+            TokenKind::String => "String",
+            TokenKind::Integer => "Integer",
+            TokenKind::Float => "Float",
+            TokenKind::Identifier => "Identifier",
+            TokenKind::Boolean => "Boolean",
             TokenKind::OpenParen => "(",
             TokenKind::CloseParen => ")",
             TokenKind::OpenBracket => "[",

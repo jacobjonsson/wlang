@@ -5,7 +5,8 @@ mod number;
 mod string;
 mod whitespace;
 
-use cursor::Cursor;
+use std::thread::current;
+
 pub use error::LexerError;
 use identifier::is_identifier_start;
 use token::TokenKind;
@@ -13,65 +14,158 @@ use token::TokenKind;
 pub type LexerResult<T> = Result<T, LexerError>;
 
 pub struct Lexer<'a> {
-    cursor: Cursor<'a>,
+    /// The original input
+    input: &'a str,
+
+    /// The current index
+    index: usize,
+
+    /// The last position in the source
+    last_position: usize,
+
+    /// The vector of characters
+    characters: Vec<(usize, char)>,
+
+    /// The current token
+    pub token: TokenKind,
+
+    /// The start position of the token
+    pub token_start: usize,
+
+    /// The end position of the token
+    pub token_end: usize,
+
+    /// The string value of the token
+    pub token_text: &'a str,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(source: &str) -> Lexer {
+    pub fn new(input: &str) -> Lexer {
+        let characters: Vec<(usize, char)> = input.char_indices().collect();
+        let last_position = characters
+            .last()
+            .map(|(idx, char)| idx + char.len_utf8())
+            .unwrap();
+
         Lexer {
-            cursor: Cursor::new(source),
+            input,
+            index: 0,
+            last_position,
+            characters,
+            token: TokenKind::EndOfFile,
+            token_start: 0,
+            token_end: 0,
+            token_text: "",
         }
     }
 
-    pub fn next(&mut self) -> Result<Option<TokenKind>, LexerError> {
+    pub fn expect(&mut self, token: TokenKind) -> LexerResult<()> {
+        if self.token != token {
+            return Err(LexerError::UnexpectedToken);
+        }
+
+        self.next()
+    }
+
+    pub fn slice(&self, start: usize, end: usize) -> &'a str {
+        &self.input[start..end]
+    }
+
+    /// Scans the source code in a global context
+    pub fn scan_global(&mut self) -> LexerResult<()> {
         self.skip_whitespace()?;
 
-        let current = match self.cursor.current() {
+        let character = match self.current_character() {
             Some(c) => c,
-            None => return Ok(None),
+            None => {
+                self.token = TokenKind::EndOfFile;
+                return Ok(());
+            }
+        };
+
+        match character {
+            c if is_identifier_start(c) => {
+                let identifier = self.scan_identifier()?;
+
+                self.token = match identifier {
+                    "script" => TokenKind::Script,
+                    "view" => TokenKind::View,
+                    "style" => TokenKind::Style,
+                    _ => return Err(LexerError::UnexpectedToken),
+                }
+            }
+
+            '{' => {
+                self.index += 1;
+                self.token = TokenKind::OpenBrace;
+            }
+
+            '}' => {
+                self.index += 1;
+                self.token = TokenKind::CloseBrace;
+            }
+
+            _ => return Err(LexerError::UnexpectedToken),
+        };
+
+        Ok(())
+    }
+
+    pub fn next(&mut self) -> LexerResult<()> {
+        self.skip_whitespace()?;
+
+        let current = match self.current_character() {
+            Some(c) => c,
+            None => {
+                self.token = TokenKind::EndOfFile;
+                return Ok(());
+            }
         };
 
         let token = match current {
-            c if is_identifier_start(c) => self.scan_identifier()?,
+            c if is_identifier_start(c) => {
+                self.token_text = self.scan_identifier()?;
+                TokenKind::Identifier
+            }
 
             '"' => self.scan_string()?,
 
             '0'..='9' => self.scan_number()?,
 
             '(' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::OpenParen
             }
 
             ')' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::CloseParen
             }
 
             '{' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::OpenBrace
             }
 
             '}' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::CloseBrace
             }
 
             '[' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::OpenBracket
             }
 
             ']' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::CloseBracket
             }
 
             '+' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some('=') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some('=') {
+                    self.index += 1;
                     TokenKind::PlusEqual
                 } else {
                     TokenKind::Plus
@@ -79,9 +173,9 @@ impl<'a> Lexer<'a> {
             }
 
             '-' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some('=') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some('=') {
+                    self.index += 1;
                     TokenKind::MinusEqual
                 } else {
                     TokenKind::Minus
@@ -89,9 +183,9 @@ impl<'a> Lexer<'a> {
             }
 
             '*' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some('=') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some('=') {
+                    self.index += 1;
                     TokenKind::StarEqual
                 } else {
                     TokenKind::Star
@@ -99,9 +193,9 @@ impl<'a> Lexer<'a> {
             }
 
             '/' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some('=') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some('=') {
+                    self.index += 1;
                     TokenKind::SlashEqual
                 } else {
                     TokenKind::Slash
@@ -109,9 +203,9 @@ impl<'a> Lexer<'a> {
             }
 
             '%' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some('=') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some('=') {
+                    self.index += 1;
                     TokenKind::PercentEqual
                 } else {
                     TokenKind::Percent
@@ -119,14 +213,14 @@ impl<'a> Lexer<'a> {
             }
 
             '.' => {
-                self.cursor.bump();
+                self.index += 1;
                 TokenKind::Dot
             }
 
             ':' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some(':') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some(':') {
+                    self.index += 1;
                     TokenKind::ColonColon
                 } else {
                     TokenKind::Colon
@@ -134,9 +228,9 @@ impl<'a> Lexer<'a> {
             }
 
             '=' => {
-                self.cursor.bump();
-                if self.cursor.current() == Some('=') {
-                    self.cursor.bump();
+                self.index += 1;
+                if self.current_character() == Some('=') {
+                    self.index += 1;
                     TokenKind::EqualEqual
                 } else {
                     TokenKind::Equal
@@ -146,7 +240,37 @@ impl<'a> Lexer<'a> {
             _ => return Err(LexerError::UnexpectedToken),
         };
 
-        Ok(Some(token))
+        self.token = token;
+
+        Ok(())
+    }
+
+    fn current_character(&self) -> Option<char> {
+        match self.characters.get(self.index) {
+            Some((_, c)) => Some(*c),
+            None => None,
+        }
+    }
+
+    fn current_position(&self) -> usize {
+        match self.characters.get(self.index) {
+            Some((i, _)) => *i,
+            None => self.last_position,
+        }
+    }
+
+    fn next_character(&self) -> Option<char> {
+        match self.characters.get(self.index + 1) {
+            Some((_, c)) => Some(*c),
+            None => None,
+        }
+    }
+
+    fn next_position(&self) -> usize {
+        match self.characters.get(self.index + 1) {
+            Some((i, _)) => *i,
+            None => self.last_position,
+        }
     }
 }
 
@@ -186,7 +310,8 @@ mod tests {
 
         for (source, token) in tests {
             let mut lexer = Lexer::new(source);
-            assert_eq!(lexer.next(), Ok(Some(token)))
+            assert_eq!(lexer.next(), Ok(()));
+            assert_eq!(lexer.token, token);
         }
     }
 }

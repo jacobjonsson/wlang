@@ -1,4 +1,4 @@
-use crate::{Lexer, LexerResult};
+use crate::Parser;
 
 /// True if `c` is considered whitespace.
 pub fn is_whitespace(c: char) -> bool {
@@ -39,36 +39,20 @@ pub fn is_line_terminator(c: char) -> bool {
     )
 }
 
-impl<'a> Lexer<'a> {
-    pub(crate) fn skip_whitespace(&mut self) -> LexerResult<()> {
+impl<'a> Parser<'a> {
+    pub(crate) fn skip_whitespace(&mut self) {
         while let Some(character) = self.current_character() {
             match character {
                 c if is_whitespace(c) => {
-                    self.index += 1;
+                    self.bump();
                 }
 
                 c if is_line_terminator(c) => {
-                    self.index += 1;
+                    self.bump();
                 }
 
                 _ => break,
             }
         }
-
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use token::TokenKind;
-
-    use crate::Lexer;
-
-    #[test]
-    fn test_whitespace() {
-        let mut lexer = Lexer::new("           \n \n \t   ");
-        assert_eq!(lexer.next(), Ok(()));
-        assert_eq!(lexer.token, TokenKind::EndOfFile);
     }
 }
