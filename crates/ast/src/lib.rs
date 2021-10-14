@@ -34,6 +34,7 @@ pub enum ViewNode {
     Element {
         name: String,
         attributes: Vec<ViewNodeElementAttribute>,
+        children: Vec<ViewNode>,
     },
 }
 

@@ -45,8 +45,6 @@ impl<'a> Parser<'a> {
         let mut seen_props = false;
 
         while let Some(character) = self.current_character() {
-            println!("{:?}", character);
-
             if !is_identifier_start(character) {
                 return Err(ParserError::UnexpectedToken);
             }
@@ -107,5 +105,38 @@ impl<'a> Parser<'a> {
             style,
             view,
         })
+    }
+
+    pub(crate) fn consume_whitespace(&mut self) {
+        self.consume_while(char::is_whitespace);
+    }
+
+    pub(crate) fn consume_char(&mut self) -> char {
+        let c = self.current_character().unwrap();
+        self.bump();
+        c
+    }
+
+    pub(crate) fn consume_while<F>(&mut self, test: F) -> String
+    where
+        F: Fn(char) -> bool,
+    {
+        let mut result = String::new();
+
+        loop {
+            let c = match self.current_character() {
+                Some(c) => c,
+                None => break,
+            };
+
+            if !test(c) {
+                break;
+            }
+
+            result.push(c);
+            self.bump();
+        }
+
+        result
     }
 }

@@ -20,6 +20,7 @@ impl<'a> Parser<'a> {
             .unwrap_or_else(|| self.characters.last().map(|i| i.0).unwrap())
     }
 
+    #[allow(dead_code)]
     pub(crate) fn next_position(&self) -> usize {
         self.characters
             .get(self.index + 1)
