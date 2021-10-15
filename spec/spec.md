@@ -1,14 +1,10 @@
 ```
-// The props block defines what arguments can be provided to the component
-props {
-    name: string
-    children:
-}
+<script>
+    // A prop is created with the prop keyword.
+    prop value: string;
 
-// The script block defines runtime behavior
-script {
     // A stateful variable is created with the state keyword.
-    state a: u8 = 1;
+    state counter: i32 = 0;
 
     // A non-stateful variable is created with the let keyword.
     let b: u8 = 2;
@@ -18,14 +14,14 @@ script {
 
     // Functions are created with the fn keyword.
     fn increment() {
-        // Assigning to a stateful keyword will
-        a += 1;
+        // Assigning to a stateful variable will trigger the component to rerender
+        counter += 1;
     }
 
-    // Effect blocks run whenever a stateful variable referenced inside the block changes
+    // Effect blocks run whenever a stateful variable referenced inside the block updates
     effect {
         // Will be executed whenever the stateful variable a changes
-        console.log(a);
+        console.log(counter);
     }
 
     // The mount blocks run when the component first mounts
@@ -42,26 +38,22 @@ script {
     destroy {
         console.log("Bye bye world");
     }
-}
+</script>
 
-// The view block defines the html
-view {
-    <h1>Hello {props.name}</h1>
-
-    <button on:click={increment}>Click to increment</button>
-
-    <p>Count</p>
-
-    {#if a > 10}
-        <p>You hit the jackpot!!</p>
-    {/if}
-}
-
-// The style block defined the css
-// Styles defined inside of this block is scoped to this component
-style {
-    .hello {
-        background-color: "red";
+// The style tag defines component scoped css
+<style>
+    button {
+        padding: 16px;
+        background-color: blue;
+        font-color: white;
     }
-}
+</style>
+
+<button className="button" on:click={increment}>
+    // You can reference any declaration from the script block by wrapping it in curly braces
+    Count: {count}
+</button>
+
+// The children tag can be used to render whatever children gets passed to the component
+<children />
 ```
