@@ -1,8 +1,8 @@
-use html_lexer::{Attribute, HtmlTokenizer, Token};
+use html_lexer::{Attribute, HtmlLexer, Token};
 
 #[test]
 fn test_basic_tag() {
-    let mut lexer = HtmlTokenizer::new("<h1></h1>");
+    let mut lexer = HtmlLexer::new("<h1></h1>");
 
     assert_eq!(
         Token::Tag {
@@ -27,7 +27,7 @@ fn test_basic_tag() {
 
 #[test]
 fn test_children_tag() {
-    let mut lexer = HtmlTokenizer::new("<h1><div /></h1>");
+    let mut lexer = HtmlLexer::new("<h1><div /></h1>");
 
     assert_eq!(
         Token::Tag {
@@ -62,7 +62,7 @@ fn test_children_tag() {
 
 #[test]
 fn test_attribute() {
-    let mut lexer = HtmlTokenizer::new("<div backgroundColor=\"red\"></div>");
+    let mut lexer = HtmlLexer::new("<div backgroundColor=\"red\"></div>");
 
     assert_eq!(
         Token::Tag {

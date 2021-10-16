@@ -73,6 +73,22 @@ impl Token {
         }
     }
 
+    pub fn attributes(&self) -> &Vec<Attribute> {
+        if let Token::Tag { attributes, .. } = self {
+            &attributes
+        } else {
+            panic!("Token is not a tag");
+        }
+    }
+
+    pub fn self_closing(&self) -> bool {
+        if let Token::Tag { self_closing, .. } = self {
+            *self_closing
+        } else {
+            panic!("Token is not a tag");
+        }
+    }
+
     pub fn set_tag_name(&mut self, new_name: &str) {
         if let Token::Tag {
             ref mut tag_name, ..
@@ -81,6 +97,14 @@ impl Token {
             *tag_name = new_name.to_owned();
         } else {
             panic!("Token is not a tag");
+        }
+    }
+
+    pub fn character(&self) -> char {
+        if let Token::Character(ch) = self {
+            *ch
+        } else {
+            panic!("Token is not a character");
         }
     }
 }

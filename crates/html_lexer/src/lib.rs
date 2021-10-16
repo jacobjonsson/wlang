@@ -22,7 +22,7 @@ pub enum State {
 
 pub const EOF_CHAR: char = '\0';
 
-pub struct HtmlTokenizer {
+pub struct HtmlLexer {
     // The list of characters
     chars: Vec<(usize, char)>,
 
@@ -35,24 +35,20 @@ pub struct HtmlTokenizer {
     // The current tokenizing state
     state: State,
 
-    // The return state
-    return_state: Option<State>,
-
     // The current token
     current_token: Option<Token>,
 
     reconsume_char: bool,
 }
 
-impl HtmlTokenizer {
-    pub fn new(source: &str) -> HtmlTokenizer {
-        HtmlTokenizer {
+impl HtmlLexer {
+    pub fn new(source: &str) -> HtmlLexer {
+        HtmlLexer {
             chars: source.char_indices().collect(),
             index: 0,
             current_char: '\0',
             current_token: None,
             state: State::Data,
-            return_state: None,
             reconsume_char: false,
         }
     }
