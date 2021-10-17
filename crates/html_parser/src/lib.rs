@@ -87,7 +87,7 @@ impl HtmlParser {
         while let Token::Character(ch) = self.next() {
             text.append_text(*ch);
         }
-        println!("{:?}", self.token);
+
         self.current().borrow_mut().append_child(NodeRef::new(text));
     }
 }
