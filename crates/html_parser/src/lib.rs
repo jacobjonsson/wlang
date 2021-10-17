@@ -25,7 +25,8 @@ impl HtmlParser {
     }
 
     pub fn parse(mut self) -> NodeRef {
-        while self.next() != &Token::EOF {
+        self.next();
+        while self.token != Token::EOF {
             self.handle_token();
         }
 
@@ -43,11 +44,14 @@ impl HtmlParser {
 
     fn handle_token(&mut self) {
         match self.token {
+            Token::Character(ch) if ch.is_whitespace() => {
+                self.next();
+            }
             Token::Character(_) => self.handle_text(),
             Token::Doctype => panic!("Does not support doctype"),
             Token::Tag { .. } => self.handle_tag(),
             Token::EOF => return,
-        }
+        };
     }
 
     fn handle_tag(&mut self) {
@@ -60,6 +64,7 @@ impl HtmlParser {
 
         if self.token.is_end_tag() {
             self.stack.pop();
+            self.next();
             return;
         }
 
@@ -68,21 +73,21 @@ impl HtmlParser {
         if self.token.self_closing() {
             // We don't push it onto the stack if it's self closing.
             parent.borrow_mut().append_child(element_ref);
-            return;
         } else {
             parent.borrow_mut().append_child(element_ref.clone());
             self.stack.push(element_ref.clone());
         }
+        self.next();
     }
 
     fn handle_text(&mut self) {
         let mut text = Node::new_text();
         text.append_text(self.token.character());
 
-        while let Token::Character(ch) = self.token {
-            text.append_text(ch);
-            self.next();
+        while let Token::Character(ch) = self.next() {
+            text.append_text(*ch);
         }
+        println!("{:?}", self.token);
         self.current().borrow_mut().append_child(NodeRef::new(text));
     }
 }

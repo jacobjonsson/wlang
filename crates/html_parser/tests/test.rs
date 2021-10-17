@@ -1,25 +1,19 @@
 use html_parser::HtmlParser;
+use insta::assert_json_snapshot;
 
 #[test]
-fn test_text() {
-    let parser = HtmlParser::new("abc");
-    let json = serde_json::to_string_pretty(&parser.parse()).unwrap();
-    println!("{}", json);
-    panic!("Trigger print");
-}
-
-#[test]
-fn test_element() {
-    let parser = HtmlParser::new("<div></div>");
-    let json = serde_json::to_string_pretty(&parser.parse()).unwrap();
-    println!("{}", json);
-    panic!("Trigger print");
-}
-
-#[test]
-fn test_nested_element() {
-    let parser = HtmlParser::new("<div><div></div></div>");
-    let json = serde_json::to_string_pretty(&parser.parse()).unwrap();
-    println!("{}", json);
-    panic!("Trigger print");
+fn basic_test_cases() {
+    assert_json_snapshot!(HtmlParser::new("abc").parse());
+    assert_json_snapshot!(HtmlParser::new("<div />").parse());
+    assert_json_snapshot!(HtmlParser::new("<div></div>").parse());
+    assert_json_snapshot!(HtmlParser::new("<div><div><h1></h1></div></div>").parse());
+    assert_json_snapshot!(HtmlParser::new("<div><div></div></div><div><div></div></div>").parse());
+    assert_json_snapshot!(HtmlParser::new(
+        "
+        <div>
+            <h1>Hello world</h1>
+        </div>
+    "
+    )
+    .parse())
 }

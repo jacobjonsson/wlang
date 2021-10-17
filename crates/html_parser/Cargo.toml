@@ -10,5 +10,4 @@ html_lexer = { path = "../html_lexer" }
 html_ast = { path = "../html_ast" }
 
 [dev-dependencies]
-serde = { version = "1" }
-serde_json = { version = "1" }
+insta = { version = "1.8" }

@@ -1,0 +1,16 @@
+---
+source: crates/html_parser/tests/test.rs
+expression: "HtmlParser::new(\"abc\").parse()"
+
+---
+{
+  "Element": {
+    "name": "fragment",
+    "attributes": [],
+    "children": [
+      {
+        "Text": "abc"
+      }
+    ]
+  }
+}
