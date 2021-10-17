@@ -4,16 +4,18 @@ expression: "HtmlParser::new(\"<script>function a() {}; console.log(a());</scrip
 
 ---
 {
-  "Element": {
-    "name": "fragment",
-    "attributes": [],
-    "children": [
-      {
-        "Script": {
-          "attributes": [],
-          "source": "function a() {}; console.log(a());"
-        }
-      }
-    ]
-  }
+  "html": {
+    "Element": {
+      "name": "fragment",
+      "attributes": [],
+      "children": []
+    }
+  },
+  "script": [
+    {
+      "attributes": [],
+      "source": "function a() {}; console.log(a());"
+    }
+  ],
+  "style": []
 }

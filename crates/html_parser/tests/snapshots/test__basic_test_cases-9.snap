@@ -4,16 +4,18 @@ expression: "HtmlParser::new(\"<style>.red { background-color: red; }</style>\")
 
 ---
 {
-  "Element": {
-    "name": "fragment",
-    "attributes": [],
-    "children": [
-      {
-        "Style": {
-          "attributes": [],
-          "source": ".red { background-color: red; }"
-        }
-      }
-    ]
-  }
+  "html": {
+    "Element": {
+      "name": "fragment",
+      "attributes": [],
+      "children": []
+    }
+  },
+  "script": [],
+  "style": [
+    {
+      "attributes": [],
+      "source": ".red { background-color: red; }"
+    }
+  ]
 }

@@ -1,10 +1,12 @@
-use html_ast::{Element, Node, NodeRef, Script, Style};
+use html_ast::{Attribute, Component, Element, Node, NodeRef, Script, Style};
 use html_lexer::{HtmlLexer, Token};
 
 pub struct HtmlParser {
     lexer: HtmlLexer,
     fragment: NodeRef,
     stack: Vec<NodeRef>,
+    script: Vec<Script>,
+    style: Vec<Style>,
     token: Token,
 }
 
@@ -19,18 +21,24 @@ impl HtmlParser {
         HtmlParser {
             lexer: HtmlLexer::new(source),
             stack: vec![fragment.clone()],
+            script: Vec::new(),
+            style: Vec::new(),
             fragment,
             token: Token::EOF,
         }
     }
 
-    pub fn parse(mut self) -> NodeRef {
+    pub fn parse(mut self) -> Component {
         self.next();
         while self.token != Token::EOF {
             self.handle_token();
         }
 
-        return self.fragment;
+        Component {
+            html: self.fragment,
+            script: self.script,
+            style: self.style,
+        }
     }
 
     fn current(&mut self) -> NodeRef {
@@ -69,14 +77,17 @@ impl HtmlParser {
             while !self.next().is_tag() {
                 source.push(self.token.character());
             }
-            let mut script = Node::Script(Script {
+            let mut script = Script {
                 attributes: Vec::new(),
                 source,
-            });
+            };
             for attribute in self.token.attributes() {
-                script.set_element_attribute(attribute.name.clone(), attribute.value.clone());
+                script.attributes.push(Attribute {
+                    name: attribute.name.clone(),
+                    value: attribute.value.clone(),
+                });
             }
-            parent.borrow_mut().append_child(NodeRef::new(script));
+            self.script.push(script);
             return;
         }
 
@@ -85,14 +96,17 @@ impl HtmlParser {
             while !self.next().is_tag() {
                 source.push(self.token.character());
             }
-            let mut script = Node::Style(Style {
+            let mut style = Style {
                 attributes: Vec::new(),
                 source,
-            });
+            };
             for attribute in self.token.attributes() {
-                script.set_element_attribute(attribute.name.clone(), attribute.value.clone());
+                style.attributes.push(Attribute {
+                    name: attribute.name.clone(),
+                    value: attribute.value.clone(),
+                });
             }
-            parent.borrow_mut().append_child(NodeRef::new(script));
+            self.style.push(style);
             return;
         }
 

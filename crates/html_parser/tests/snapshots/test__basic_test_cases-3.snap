@@ -4,17 +4,21 @@ expression: "HtmlParser::new(\"<div></div>\").parse()"
 
 ---
 {
-  "Element": {
-    "name": "fragment",
-    "attributes": [],
-    "children": [
-      {
-        "Element": {
-          "name": "div",
-          "attributes": [],
-          "children": []
+  "html": {
+    "Element": {
+      "name": "fragment",
+      "attributes": [],
+      "children": [
+        {
+          "Element": {
+            "name": "div",
+            "attributes": [],
+            "children": []
+          }
         }
-      }
-    ]
-  }
+      ]
+    }
+  },
+  "script": [],
+  "style": []
 }

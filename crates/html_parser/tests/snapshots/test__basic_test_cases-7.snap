@@ -4,30 +4,34 @@ expression: "HtmlParser::new(\"<div><link href=\\\"https://www.google.com\\\" />
 
 ---
 {
-  "Element": {
-    "name": "fragment",
-    "attributes": [],
-    "children": [
-      {
-        "Element": {
-          "name": "div",
-          "attributes": [],
-          "children": [
-            {
-              "Element": {
-                "name": "link",
-                "attributes": [
-                  {
-                    "name": "href",
-                    "value": "https://www.google.com"
-                  }
-                ],
-                "children": []
+  "html": {
+    "Element": {
+      "name": "fragment",
+      "attributes": [],
+      "children": [
+        {
+          "Element": {
+            "name": "div",
+            "attributes": [],
+            "children": [
+              {
+                "Element": {
+                  "name": "link",
+                  "attributes": [
+                    {
+                      "name": "href",
+                      "value": "https://www.google.com"
+                    }
+                  ],
+                  "children": []
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
-    ]
-  }
+      ]
+    }
+  },
+  "script": [],
+  "style": []
 }

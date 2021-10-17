@@ -3,6 +3,13 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::fmt;
 use std::rc::Rc;
 
+#[derive(Serialize)]
+pub struct Component {
+    pub html: NodeRef,
+    pub script: Vec<Script>,
+    pub style: Vec<Style>,
+}
+
 /// A reference to a node.
 #[derive(Serialize)]
 pub struct NodeRef(Rc<RefCell<Node>>);
