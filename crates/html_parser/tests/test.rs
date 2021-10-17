@@ -24,4 +24,7 @@ fn basic_test_cases() {
     assert_json_snapshot!(
         HtmlParser::new("<script>function a() {}; console.log(a());</script>").parse()
     );
+    assert_json_snapshot!(
+        HtmlParser::new("<style>.red { background-color: red; }</style>").parse()
+    );
 }

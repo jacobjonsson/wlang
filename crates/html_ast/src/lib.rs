@@ -42,6 +42,8 @@ impl NodeRef {
 #[derive(Debug, PartialEq, Serialize)]
 pub enum Node {
     Element(Element),
+    Script(Script),
+    Style(Style),
     Text(String),
 }
 
@@ -63,6 +65,8 @@ impl Node {
             Node::Element(Element {
                 ref mut children, ..
             }) => children.push(child),
+            Node::Script(_) => unreachable!("Node does not support children"),
+            Node::Style(_) => unreachable!("Node does not support children"),
             Node::Text(_) => unreachable!("Node does not support children"),
         }
     }
@@ -70,6 +74,8 @@ impl Node {
     pub fn set_element_name(&mut self, new_name: String) {
         match self {
             Node::Element(Element { ref mut name, .. }) => *name = new_name,
+            Node::Script(_) => unreachable!("Node is not an element node"),
+            Node::Style(_) => unreachable!("Node is not an element node"),
             Node::Text(_) => unreachable!("Node is not an element node"),
         }
     }
@@ -79,6 +85,12 @@ impl Node {
             Node::Element(Element {
                 ref mut attributes, ..
             }) => attributes.push(Attribute { name, value }),
+            Node::Script(Script {
+                ref mut attributes, ..
+            }) => attributes.push(Attribute { name, value }),
+            Node::Style(Style {
+                ref mut attributes, ..
+            }) => attributes.push(Attribute { name, value }),
             Node::Text(_) => unreachable!("Node is not an element node"),
         }
     }
@@ -86,6 +98,8 @@ impl Node {
     pub fn append_text(&mut self, ch: char) {
         match self {
             Node::Element(_) => unreachable!("Node is not a text node"),
+            Node::Script(_) => unreachable!("Node is not a text node"),
+            Node::Style(_) => unreachable!("Node is not a text node"),
             Node::Text(ref mut text) => text.push(ch),
         }
     }
@@ -102,4 +116,16 @@ pub struct Element {
 pub struct Attribute {
     pub name: String,
     pub value: String,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+pub struct Script {
+    pub attributes: Vec<Attribute>,
+    pub source: String,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+pub struct Style {
+    pub attributes: Vec<Attribute>,
+    pub source: String,
 }

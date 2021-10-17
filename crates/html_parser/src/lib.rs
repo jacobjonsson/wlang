@@ -1,4 +1,4 @@
-use html_ast::{Element, Node, NodeRef};
+use html_ast::{Element, Node, NodeRef, Script, Style};
 use html_lexer::{HtmlLexer, Token};
 
 pub struct HtmlParser {
@@ -57,15 +57,48 @@ impl HtmlParser {
     fn handle_tag(&mut self) {
         let parent = self.current();
         let name = self.token.tag_name();
-        let mut element = Node::new_element(name.clone());
-        for attribute in self.token.attributes() {
-            element.set_element_attribute(attribute.name.clone(), attribute.value.clone());
-        }
 
         if self.token.is_end_tag() {
             self.stack.pop();
             self.next();
             return;
+        }
+
+        if self.token.tag_name().as_str() == "script" {
+            let mut source = String::new();
+            while !self.next().is_tag() {
+                source.push(self.token.character());
+            }
+            let mut script = Node::Script(Script {
+                attributes: Vec::new(),
+                source,
+            });
+            for attribute in self.token.attributes() {
+                script.set_element_attribute(attribute.name.clone(), attribute.value.clone());
+            }
+            parent.borrow_mut().append_child(NodeRef::new(script));
+            return;
+        }
+
+        if self.token.tag_name().as_str() == "style" {
+            let mut source = String::new();
+            while !self.next().is_tag() {
+                source.push(self.token.character());
+            }
+            let mut script = Node::Style(Style {
+                attributes: Vec::new(),
+                source,
+            });
+            for attribute in self.token.attributes() {
+                script.set_element_attribute(attribute.name.clone(), attribute.value.clone());
+            }
+            parent.borrow_mut().append_child(NodeRef::new(script));
+            return;
+        }
+
+        let mut element = Node::new_element(name.clone());
+        for attribute in self.token.attributes() {
+            element.set_element_attribute(attribute.name.clone(), attribute.value.clone());
         }
 
         let element_ref = NodeRef::new(element);

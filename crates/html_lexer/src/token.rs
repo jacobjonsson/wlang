@@ -49,6 +49,13 @@ impl Token {
         }
     }
 
+    pub fn is_tag(&self) -> bool {
+        match self {
+            Token::Tag { .. } => true,
+            _ => false,
+        }
+    }
+
     pub fn is_start_tag(&self) -> bool {
         if let Token::Tag { is_end_tag, .. } = self {
             !*is_end_tag

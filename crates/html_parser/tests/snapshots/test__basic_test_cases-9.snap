@@ -1,6 +1,6 @@
 ---
 source: crates/html_parser/tests/test.rs
-expression: "HtmlParser::new(\"<script>function a() {}; console.log(a());</script>\").parse()"
+expression: "HtmlParser::new(\"<style>.red { background-color: red; }</style>\").parse()"
 
 ---
 {
@@ -9,9 +9,9 @@ expression: "HtmlParser::new(\"<script>function a() {}; console.log(a());</scrip
     "attributes": [],
     "children": [
       {
-        "Script": {
+        "Style": {
           "attributes": [],
-          "source": "function a() {}; console.log(a());"
+          "source": ".red { background-color: red; }"
         }
       }
     ]
