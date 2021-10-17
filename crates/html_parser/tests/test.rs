@@ -15,5 +15,9 @@ fn basic_test_cases() {
         </div>
     "
     )
-    .parse())
+    .parse());
+
+    assert_json_snapshot!(
+        HtmlParser::new("<div><link href=\"https://www.google.com\" /></div>").parse()
+    );
 }
