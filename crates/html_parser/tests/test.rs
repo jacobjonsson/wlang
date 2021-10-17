@@ -20,4 +20,8 @@ fn basic_test_cases() {
     assert_json_snapshot!(
         HtmlParser::new("<div><link href=\"https://www.google.com\" /></div>").parse()
     );
+
+    assert_json_snapshot!(
+        HtmlParser::new("<script>function a() {}; console.log(a());</script>").parse()
+    );
 }
