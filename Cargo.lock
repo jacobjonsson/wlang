@@ -22,6 +22,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "css_ast"
+version = "0.1.0"
+
+[[package]]
+name = "css_lexer"
+version = "0.1.0"
+
+[[package]]
 name = "dtoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
