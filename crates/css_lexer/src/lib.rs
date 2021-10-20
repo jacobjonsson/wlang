@@ -1,375 +1,720 @@
-use std::str::CharIndices;
+use cursor::Cursor;
 
-#[derive(PartialEq, Debug)]
-pub enum Token<'a> {
-    EndOfFile,
-    Ident(&'a str),
-    Function(&'a str),
-    AtKeyword(&'a str),
+#[derive(Debug, PartialEq)]
+pub enum LexerError {
+    EOF,
+    UnterminatedString,
+    UnexpectedChar(char),
+    UnterminatedUrl,
+}
+
+type LexerResult<T> = Result<T, LexerError>;
+
+#[derive(Debug, PartialEq)]
+pub enum TokenKind {
+    EOF,
+
+    Ident {
+        value: String,
+    },
+
+    Function {
+        value: String,
+    },
+
+    AtKeyword {
+        value: String,
+    },
+
     Hash {
-        value: &'a str,
-        id: bool,
+        value: String,
+        is_id: bool,
     },
-    String(&'a str),
-    BadString,
-    Url(&'a str),
-    BadUrl,
-    Delim(char),
+
+    String {
+        value: String,
+    },
+
+    BadString {
+        value: String,
+    },
+
+    Url {
+        value: String,
+    },
+
+    BadUrl {
+        value: String,
+    },
+
+    Delim {
+        value: char,
+    },
+
     Number {
-        value: f32,
-        int_value: Option<i32>,
+        value: String,
     },
-    Percentage {
-        value: f32,
+
+    Percent {
+        value: String,
     },
+
     Dimension {
-        value: f32,
-        int_value: Option<i32>,
-        unit: &'a str,
+        value: String,
+        unit: String,
     },
+
     Whitespace,
+
+    /// <!--
     CDO,
+
+    /// -->
     CDC,
+
+    /// :
     Colon,
+
+    /// ;
     Semicolon,
+
+    /// ,
     Comma,
+
+    /// [
     OpenBracket,
+
+    /// ]
     CloseBracket,
+
+    /// (
     OpenParen,
+
+    /// )
     CloseParen,
+
+    /// {
     OpenBrace,
+
+    /// }
     CloseBrace,
 }
 
-fn is_name_start(ch: char) -> bool {
-    ch.is_ascii_alphabetic() || ch == '_'
+#[derive(Debug, PartialEq)]
+pub struct Token {
+    pub start: usize,
+    pub end: usize,
+    pub kind: TokenKind,
 }
 
-fn is_name_continue(ch: char) -> bool {
-    is_name_start(ch) || matches!(ch, '0'..='9') || ch == '-'
+pub struct Lexer<C: Cursor> {
+    cursor: C,
 }
 
-fn is_digit(ch: char) -> bool {
-    matches!(ch, '0'..='9')
-}
-
-pub struct Lexer<'a> {
-    source: &'a str,
-    iter: CharIndices<'a>,
-    current_char: char,
-    current_position: usize,
-}
-
-impl<'a> Lexer<'a> {
-    pub fn new(source: &'a str) -> Lexer {
-        let mut lexer = Lexer {
-            source,
-            iter: source.char_indices(),
-            current_char: '\0',
-            current_position: 0,
-        };
-        // Prime the lexer
-        lexer.step();
-        lexer
+impl<C: Cursor> Lexer<C> {
+    pub fn new(cursor: C) -> Self {
+        Lexer { cursor }
     }
 
-    fn step(&mut self) -> char {
-        if let Some((pos, ch)) = self.iter.next() {
-            self.current_char = ch;
-            self.current_position = pos;
-            self.current_char
-        } else {
-            self.current_position = self.current_position + self.current_char.len_utf8();
-            self.current_char = '\0';
-            '\0'
+    pub fn next(&mut self) -> LexerResult<Token> {
+        self.skip_comments();
+
+        match self.cursor.current() {
+            // `    `
+            Some(ch) if ch.is_whitespace() => {
+                let start = self.cursor.current_position();
+                self.skip_whitespace();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::Whitespace,
+                })
+            }
+
+            Some('(') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::OpenParen,
+                })
+            }
+
+            Some(')') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::CloseParen,
+                })
+            }
+
+            Some('{') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::OpenBrace,
+                })
+            }
+
+            Some('}') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::CloseBrace,
+                })
+            }
+
+            Some('[') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::OpenBracket,
+                })
+            }
+
+            Some(']') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::CloseBracket,
+                })
+            }
+
+            Some(',') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::Comma,
+                })
+            }
+
+            Some(':') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::Colon,
+                })
+            }
+
+            Some(';') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::Semicolon,
+                })
+            }
+
+            Some('+') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                if self.would_start_a_number() {
+                    self.cursor.reset_to(start);
+                    let kind = self.consume_numeric();
+                    let end = self.cursor.current_position();
+                    Ok(Token { start, end, kind })
+                } else {
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Delim { value: '+' },
+                    })
+                }
+            }
+
+            Some('-') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                if self.would_start_a_number() {
+                    self.cursor.reset_to(start);
+                    let kind = self.consume_numeric();
+                    let end = self.cursor.current_position();
+                    Ok(Token { start, end, kind })
+                } else if self.cursor.current() == Some('-') && self.cursor.peek() == Some('>') {
+                    self.cursor.increment();
+                    self.cursor.increment();
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::CDC,
+                    })
+                } else {
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Delim { value: '-' },
+                    })
+                }
+            }
+
+            // `/`, `/* ... */`
+            Some('/') => {
+                if self.cursor.peek() == Some('*') {
+                    todo!("Comments is not yet implemented")
+                }
+
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    kind: TokenKind::Delim { value: '/' },
+                    start,
+                    end,
+                })
+            }
+
+            // `<!--`, `<`
+            Some('<') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                if self.cursor.current() == Some('!')
+                    && self.cursor.peek_nth(1) == Some('-')
+                    && self.cursor.peek_nth(2) == Some('-')
+                {
+                    self.cursor.increment();
+                    self.cursor.increment();
+                    self.cursor.increment();
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::CDO,
+                    })
+                } else {
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Delim { value: '<' },
+                    })
+                }
+            }
+
+            Some('@') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                if self.would_start_an_identifier() {
+                    let value = self.consume_name();
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::AtKeyword { value },
+                    })
+                } else {
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Delim { value: '@' },
+                    })
+                }
+            }
+
+            Some('.') => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                if self.would_start_a_number() {
+                    self.cursor.reset_to(start);
+                    let kind = self.consume_numeric();
+                    let end = self.cursor.current_position();
+                    Ok(Token { start, end, kind })
+                } else {
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Delim { value: '.' },
+                    })
+                }
+            }
+
+            Some(ch) if ch.is_digit(10) => {
+                let start = self.cursor.current_position();
+                let kind = self.consume_numeric();
+                let end = self.cursor.current_position();
+                Ok(Token { start, end, kind })
+            }
+
+            Some(ch) if is_name_start(ch) => {
+                let start = self.cursor.current_position();
+                let kind = self.consume_name_like()?;
+                let end = self.cursor.current_position();
+                Ok(Token { start, end, kind })
+            }
+
+            // `"abc"`, `'abc'`
+            Some(ch) if ch == '"' || ch == '\'' => {
+                let start = self.cursor.current_position();
+                self.cursor.increment(); // Skip the leading `"` | `'`
+                let value = self.consume_string(ch)?;
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    start,
+                    end,
+                    kind: TokenKind::String { value },
+                })
+            }
+
+            Some('\\') => todo!(),
+
+            // `#ffffff`, `#my-id`
+            Some('#') => {
+                let start = self.cursor.current_position();
+                // Skip the leading hash to prime the lexer for identifier check.
+                self.cursor.increment();
+                if matches!(self.cursor.current(), Some(ch) if is_name_continue(ch)) {
+                    let is_id = self.would_start_an_identifier();
+                    let value = self.consume_name();
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Hash { value, is_id },
+                    })
+                } else {
+                    let end = self.cursor.current_position();
+                    Ok(Token {
+                        start,
+                        end,
+                        kind: TokenKind::Delim { value: '#' },
+                    })
+                }
+            }
+
+            // End of file
+            None => Ok(Token {
+                kind: TokenKind::EOF,
+                start: self.cursor.current_position(),
+                end: self.cursor.current_position(),
+            }),
+
+            // Catch all for delimiters
+            Some(value) => {
+                let start = self.cursor.current_position();
+                self.cursor.increment();
+                let end = self.cursor.current_position();
+                Ok(Token {
+                    kind: TokenKind::Delim { value },
+                    start,
+                    end,
+                })
+            }
         }
-    }
-
-    fn slice_from(&self, start: usize) -> &'a str {
-        &self.source[start..self.current_position]
-    }
-
-    fn peek_nth(&self, n: usize) -> char {
-        self.iter.clone().nth(n).map(|(_, ch)| ch).unwrap_or('\0')
-    }
-
-    fn peek(&self) -> char {
-        self.peek_nth(0)
     }
 
     fn would_start_a_number(&self) -> bool {
-        if is_digit(self.current_char) {
-            return true;
-        }
+        match self.cursor.current() {
+            Some('+' | '-') => match self.cursor.peek() {
+                Some(ch) if ch.is_digit(10) => true,
 
-        if self.current_char == '.' {
-            return is_digit(self.peek());
-        }
-
-        if matches!(self.current_char, '+' | '-') {
-            if is_digit(self.peek()) {
-                return true;
-            }
-
-            if self.peek() == '.' && is_digit(self.peek_nth(2)) {
-                return true;
-            }
-
-            return false;
-        }
-
-        return false;
-    }
-
-    /// https://www.w3.org/TR/css-syntax-3/#check-if-three-code-points-would-start-an-identifier
-    fn would_start_an_identifier(&self) -> bool {
-        if is_name_start(self.current_char) {
-            return true;
-        }
-
-        if self.current_char == '-' {
-            let next = self.peek();
-            if is_name_start(next) || next == '-' {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    pub fn next(&mut self) -> Token<'a> {
-        match self.current_char {
-            '\0' => Token::EndOfFile,
-
-            c if c.is_whitespace() => {
-                self.step();
-                loop {
-                    if self.current_char.is_whitespace() {
-                        self.step();
+                Some('.') => {
+                    if let Some(ch) = self.cursor.peek_nth(2) {
+                        ch.is_digit(10)
                     } else {
-                        break;
+                        false
                     }
                 }
-                Token::Whitespace
-            }
+                _ => false,
+            },
 
-            '<' => {
-                // TODO: Check for CDO token..?
-                self.step();
-                Token::Delim('<')
-            }
-
-            '\\' => {
-                panic!("Does not know how to handle escaped names")
-            }
-
-            '@' => {
-                if self.would_start_an_identifier() {
-                    Token::AtKeyword(self.consume_name())
+            Some('.') => {
+                if let Some(ch) = self.cursor.peek() {
+                    ch.is_digit(10)
                 } else {
-                    self.step();
-                    Token::Delim('@')
+                    false
                 }
             }
 
-            '#' => {
-                self.step();
+            Some(ch) => ch.is_digit(10),
 
-                if self.current_char == '\\' {
-                    panic!("Escaped names is not supported");
-                }
-
-                if is_name_continue(self.current_char) {
-                    let id = self.would_start_an_identifier();
-                    let value = self.consume_name();
-                    Token::Hash { value, id }
-                } else {
-                    Token::Delim('#')
-                }
-            }
-
-            '.' => {
-                if self.would_start_a_number() {
-                    self.consume_numeric()
-                } else {
-                    Token::Delim('.')
-                }
-            }
-
-            '+' => {
-                if self.would_start_a_number() {
-                    self.consume_numeric()
-                } else {
-                    self.step();
-                    Token::Delim('+')
-                }
-            }
-
-            '-' => {
-                if self.would_start_a_number() {
-                    self.consume_numeric()
-                } else {
-                    self.step();
-                    Token::Delim('-')
-                }
-            }
-
-            '0'..='9' => self.consume_numeric(),
-
-            '(' => {
-                self.step();
-                Token::OpenParen
-            }
-
-            ')' => {
-                self.step();
-                Token::CloseParen
-            }
-
-            '{' => {
-                self.step();
-                Token::OpenBrace
-            }
-
-            '}' => {
-                self.step();
-                Token::CloseBrace
-            }
-
-            '[' => {
-                self.step();
-                Token::OpenBracket
-            }
-
-            ']' => {
-                self.step();
-                Token::CloseBracket
-            }
-
-            ',' => {
-                self.step();
-                Token::Comma
-            }
-
-            ':' => {
-                self.step();
-                Token::Colon
-            }
-
-            ';' => {
-                self.step();
-                Token::Semicolon
-            }
-
-            '"' => self.consume_string('"'),
-
-            '\'' => self.consume_string('\''),
-
-            c => {
-                self.step();
-                Token::Delim(c)
-            }
+            _ => false,
         }
     }
 
-    fn consume_numeric(&mut self) -> Token<'a> {
-        let (has_sign, sign) = match self.current_char {
-            '-' => (true, -1.),
-            '+' => (true, 1.),
-            _ => (false, 1.),
-        };
-        if has_sign {
-            self.step();
-        }
+    fn would_start_an_identifier(&self) -> bool {
+        match self.cursor.current() {
+            Some(ch) if is_name_start(ch) => true,
 
-        let mut integral_part: f64 = 0.;
-        while let Some(digit) = char::to_digit(self.current_char, 10) {
-            integral_part = integral_part * 10. + digit as f64;
-            self.step();
-        }
+            Some('-') => match self.cursor.peek() {
+                Some(ch) if is_name_start(ch) => true,
+                Some('-') => true,
+                _ => false,
+            },
 
-        let mut is_integer = true;
-        let mut fractional_part: f64 = 0.;
-        if self.current_char == '.' && is_digit(self.peek()) {
-            is_integer = false;
-            self.step(); // Consume .
-            let mut factor = 0.1;
-            while let Some(digit) = char::to_digit(self.current_char, 10) {
-                fractional_part += digit as f64 * factor;
-                factor *= 0.1;
-                self.step();
+            None | Some(_) => false,
+        }
+    }
+
+    // Keeps incrementing the cursor until the comment has been skipped
+    fn skip_comments(&mut self) {
+        match (self.cursor.current(), self.cursor.peek()) {
+            (Some('/'), Some('*')) => {
+                self.cursor.increment();
+                self.cursor.increment();
+
+                while self.cursor.current() != Some('*') && self.cursor.peek() != Some('/') {
+                    self.cursor.increment();
+                }
+
+                self.cursor.increment();
+                self.cursor.increment();
             }
-        }
 
-        let value = sign * (integral_part + fractional_part);
-
-        let int_value = if is_integer {
-            Some(if value >= i32::MAX as f64 {
-                i32::MAX
-            } else if value <= i32::MIN as f64 {
-                i32::MIN
-            } else {
-                value as i32
-            })
-        } else {
-            None
+            _ => {}
         };
+    }
 
-        if self.current_char == '%' {
-            self.step();
-            return Token::Percentage {
-                value: (value / 100.) as f32,
-            };
+    /// Keeps incrementing the cursor until the current character is not whitespace
+    fn skip_whitespace(&mut self) {
+        loop {
+            if self.cursor.current().is_none() {
+                break;
+            }
+
+            if self.cursor.current().unwrap().is_whitespace() {
+                self.cursor.increment();
+                continue;
+            }
+
+            break;
         }
+    }
 
+    /// https://www.w3.org/TR/css-syntax-3/#consume-a-numeric-token
+    fn consume_numeric(&mut self) -> TokenKind {
+        let value = self.consume_number();
         if self.would_start_an_identifier() {
             let unit = self.consume_name();
-            return Token::Dimension {
-                value: value as f32,
-                int_value,
-                unit,
-            };
+            TokenKind::Dimension { value, unit }
+        } else if self.cursor.current() == Some('%') {
+            self.cursor.increment();
+            TokenKind::Percent { value }
+        } else {
+            TokenKind::Number { value }
         }
+    }
 
-        return Token::Number {
-            value: value as f32,
-            int_value,
+    /// Consume a number
+    /// https://www.w3.org/TR/css-syntax-3/#consume-a-number
+    fn consume_number(&mut self) -> String {
+        let mut number = String::new();
+
+        match self.cursor.current() {
+            Some('+') => {
+                self.cursor.increment();
+                number.push('+');
+            }
+            Some('-') => {
+                self.cursor.increment();
+                number.push('-');
+            }
+
+            _ => {}
         };
-    }
 
-    fn consume_name(&mut self) -> &'a str {
-        let start = self.current_position;
-        while is_name_continue(self.current_char) {
-            self.step();
+        while let Some(ch) = self.cursor.current() {
+            if !ch.is_digit(10) {
+                break;
+            }
+            number.push(ch);
+            self.cursor.increment();
         }
 
-        if self.current_char == '\\' {
-            panic!("Escaped names is not supported");
+        if self.cursor.current() == Some('.')
+            && matches!(self.cursor.peek(), Some(ch) if ch.is_digit(10))
+        {
+            number.push('.');
+            self.cursor.increment(); // Skip over the .
+            number.push(self.cursor.current().unwrap()); // We can unwrap since we've already checked it.
+            self.cursor.increment(); // Skip over the first digit
+
+            while let Some(ch) = self.cursor.current() {
+                if !ch.is_digit(10) {
+                    break;
+                }
+                number.push(ch);
+                self.cursor.increment();
+            }
         }
 
-        self.slice_from(start)
-    }
-
-    fn consume_string(&mut self, ending_char: char) -> Token<'a> {
-        self.step();
-        let start = self.current_position;
-        loop {
-            match self.current_char {
-                '\n' | '\0' => panic!("Unterminated string literal"),
-                ch if ending_char == ch => break,
-                '\\' => {
-                    if self.peek() == '\n' {
-                        self.step();
-                        continue;
+        // `e12`, `E-123`
+        if matches!(self.cursor.current(), Some('E') | Some('e')) {
+            if matches!(self.cursor.peek(), Some('-') | Some('+')) {
+                if matches!(self.cursor.peek_nth(2), Some(ch) if ch.is_digit(10)) {
+                    number.push(self.cursor.current().unwrap());
+                    number.push(self.cursor.peek().unwrap());
+                    number.push(self.cursor.peek_nth(2).unwrap());
+                    self.cursor.increment();
+                    self.cursor.increment();
+                    self.cursor.increment();
+                    while let Some(ch) = self.cursor.current() {
+                        if !ch.is_digit(10) {
+                            break;
+                        }
+                        number.push(ch);
+                        self.cursor.increment();
                     }
                 }
-                _ => {
-                    self.step();
+            } else if matches!(self.cursor.peek(), Some(ch) if ch.is_digit(10)) {
+                number.push(self.cursor.current().unwrap());
+                number.push(self.cursor.peek().unwrap());
+                self.cursor.increment();
+                self.cursor.increment();
+                while let Some(ch) = self.cursor.current() {
+                    if !ch.is_digit(10) {
+                        break;
+                    }
+                    number.push(ch);
+                    self.cursor.increment();
                 }
             }
         }
-        let text = self.slice_from(start);
-        self.step();
-        Token::String(text)
+
+        number
     }
+
+    fn consume_name_like(&mut self) -> LexerResult<TokenKind> {
+        let value = self.consume_name();
+
+        // `url(`
+        if value.to_lowercase().as_str() == "url" && self.cursor.current() == Some('(') {
+            self.cursor.increment();
+
+            while self.cursor.current() == Some(' ') && self.cursor.peek() == Some(' ') {
+                self.cursor.increment();
+            }
+
+            match (self.cursor.current(), self.cursor.peek()) {
+                (Some('"' | '\''), _) => return Ok(TokenKind::Function { value }),
+                (Some(' '), Some('"' | '\'')) => return Ok(TokenKind::Function { value }),
+                _ => {
+                    return Ok(TokenKind::Url {
+                        value: self.consume_url()?,
+                    })
+                }
+            };
+        }
+
+        if self.cursor.current() == Some('(') {
+            self.cursor.increment();
+            return Ok(TokenKind::Function { value });
+        }
+
+        return Ok(TokenKind::Ident { value });
+    }
+
+    fn consume_url(&mut self) -> LexerResult<String> {
+        self.skip_whitespace();
+        let mut result = String::new();
+
+        loop {
+            match self.cursor.current() {
+                Some(')') => return Ok(result),
+                Some('"' | '\'' | '(') => return Err(LexerError::UnterminatedUrl),
+                Some(ch) => result.push(ch),
+                None => return Err(LexerError::EOF),
+            };
+
+            self.cursor.increment();
+        }
+    }
+
+    fn consume_string(&mut self, end_char: char) -> LexerResult<String> {
+        let mut result = String::new();
+
+        loop {
+            match self.cursor.current() {
+                None => return Err(LexerError::UnterminatedString),
+                Some('\n') => return Err(LexerError::UnterminatedString),
+                Some('\\') => todo!(),
+                Some(ch) if ch == end_char => break,
+                Some(ch) => result.push(ch),
+            };
+
+            self.cursor.increment();
+        }
+
+        Ok(result)
+    }
+
+    fn consume_name(&mut self) -> String {
+        let mut name = String::new();
+        while let Some(ch) = self.cursor.current() {
+            if !is_name_continue(ch) {
+                break;
+            }
+
+            name.push(ch);
+            self.cursor.increment();
+        }
+        name
+    }
+}
+
+fn is_uppercase_letter(c: char) -> bool {
+    match c {
+        'A'..='Z' => true,
+        _ => false,
+    }
+}
+
+fn is_lowercase_letter(c: char) -> bool {
+    match c {
+        'a'..='z' => true,
+        _ => false,
+    }
+}
+
+fn is_letter(c: char) -> bool {
+    is_uppercase_letter(c) || is_lowercase_letter(c)
+}
+
+fn is_non_ascii(c: char) -> bool {
+    c as u32 >= 0x80
+}
+
+fn is_name_start(c: char) -> bool {
+    match c {
+        c if is_letter(c) || is_non_ascii(c) || c == '_' => true,
+        _ => false,
+    }
+}
+
+fn is_name_continue(c: char) -> bool {
+    is_name_start(c)
+        || match c {
+            c if c.is_digit(10) || c == '-' => true,
+            _ => false,
+        }
 }

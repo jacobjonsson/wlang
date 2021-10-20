@@ -1,7 +1,22 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+pub use crate::{property::*, selector::*, token::*, value::*};
+
+mod property;
+mod selector;
+mod token;
+mod value;
+
+pub struct StyleSheet {
+    pub rules: Vec<Rule>,
+}
+
+pub enum Rule {
+    Qualified(QualifiedRule),
+    AtRule(AtRule),
+}
+
+pub enum AtRule {}
+
+pub struct QualifiedRule {
+    pub selector: Vec<ComplexSelector>,
+    pub items: Vec<Property>,
 }

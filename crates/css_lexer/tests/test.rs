@@ -1,75 +1,135 @@
-use css_lexer::{Lexer, Token};
+use css_lexer::{Lexer, TokenKind};
+use cursor::StringCursor;
 
-#[test]
-fn test_whitespace() {
-    assert_eq!(Lexer::new("   ").next(), Token::Whitespace);
+fn assert_kind(source: &str, kind: TokenKind) {
+    let cursor = StringCursor::new(source);
+    let mut lexer = Lexer::new(cursor);
+    assert_eq!(lexer.next().unwrap().kind, kind);
 }
 
 #[test]
-fn test_string() {
-    let tests = [("'abc'", "abc"), ("\"abc\"", "abc")];
-
-    for (source, expected) in tests {
-        assert_eq!(Lexer::new(source).next(), Token::String(expected));
-    }
-}
-
-#[test]
-fn test_eof() {
-    assert_eq!(Lexer::new("").next(), Token::EndOfFile);
-}
-
-#[test]
-fn test_punctuator() {
+fn test_hash() {
     let tests = [
-        ("(", Token::OpenParen),
-        (")", Token::CloseParen),
-        ("{", Token::OpenBrace),
-        ("}", Token::CloseBrace),
-        ("[", Token::OpenBracket),
-        ("]", Token::CloseBracket),
-        (",", Token::Comma),
-        (":", Token::Colon),
-        (";", Token::Semicolon),
-        ("+", Token::Delim('+')),
-        ("-", Token::Delim('-')),
-        ("#", Token::Delim('#')),
-        ("@", Token::Delim('@')),
-    ];
-
-    for (source, token) in tests {
-        assert_eq!(Lexer::new(source).next(), token);
-    }
-}
-
-#[test]
-fn test_id_hash() {
-    let tests = [
+        ("#", TokenKind::Delim { value: '#' }),
         (
             "#abc",
-            Token::Hash {
-                value: "abc",
-                id: true,
+            TokenKind::Hash {
+                value: "abc".into(),
+                is_id: true,
             },
         ),
         (
-            "#_abc",
-            Token::Hash {
-                value: "_abc",
-                id: true,
-            },
-        ),
-        (
-            "#_abc123",
-            Token::Hash {
-                value: "_abc123",
-                id: true,
+            "#123",
+            TokenKind::Hash {
+                value: "123".into(),
+                is_id: false,
             },
         ),
     ];
 
-    for (source, token) in tests {
-        assert_eq!(Lexer::new(source).next(), token);
+    for (source, kind) in tests {
+        assert_kind(source, kind);
+    }
+}
+#[test]
+fn test_string() {
+    let tests = [
+        (
+            "\"abc\"",
+            TokenKind::String {
+                value: "abc".into(),
+            },
+        ),
+        (
+            "'abc'",
+            TokenKind::String {
+                value: "abc".into(),
+            },
+        ),
+    ];
+
+    for (source, kind) in tests {
+        assert_kind(source, kind);
+    }
+}
+
+#[test]
+fn test_at_keyword() {
+    let tests = [
+        (
+            "@media",
+            TokenKind::AtKeyword {
+                value: "media".into(),
+            },
+        ),
+        (
+            "@keyframe",
+            TokenKind::AtKeyword {
+                value: "keyframe".into(),
+            },
+        ),
+        ("@", TokenKind::Delim { value: '@' }),
+    ];
+
+    for (source, kind) in tests {
+        assert_kind(source, kind);
+    }
+}
+
+#[test]
+fn test_tokens() {
+    let tests = [
+        ("", TokenKind::EOF),
+        ("(", TokenKind::OpenParen),
+        (")", TokenKind::CloseParen),
+        ("{", TokenKind::OpenBrace),
+        ("}", TokenKind::CloseBrace),
+        ("[", TokenKind::OpenBracket),
+        ("]", TokenKind::CloseBracket),
+        (";", TokenKind::Semicolon),
+        (",", TokenKind::Comma),
+        (":", TokenKind::Colon),
+        ("<!--", TokenKind::CDO),
+        ("-->", TokenKind::CDC),
+        ("<", TokenKind::Delim { value: '<' }),
+    ];
+
+    for (source, kind) in tests {
+        assert_kind(source, kind);
+    }
+}
+
+#[test]
+fn test_name_like() {
+    let tests = [
+        (
+            "url(http)",
+            TokenKind::Url {
+                value: "http".into(),
+            },
+        ),
+        (
+            "url(\"http\")",
+            TokenKind::Function {
+                value: "url".into(),
+            },
+        ),
+        (
+            "calc(",
+            TokenKind::Function {
+                value: "calc".into(),
+            },
+        ),
+        (
+            "abc",
+            TokenKind::Ident {
+                value: "abc".into(),
+            },
+        ),
+    ];
+
+    for (source, kind) in tests {
+        assert_kind(source, kind);
     }
 }
 
@@ -77,93 +137,64 @@ fn test_id_hash() {
 fn test_numbers() {
     let tests = [
         (
-            "+123",
-            Token::Number {
-                int_value: Some(123),
-                value: 123.,
+            "123",
+            TokenKind::Number {
+                value: "123".into(),
             },
         ),
         (
-            "-123",
-            Token::Number {
-                int_value: Some(-123),
-                value: -123.,
+            "123.2",
+            TokenKind::Number {
+                value: "123.2".into(),
             },
         ),
         (
-            "1.2",
-            Token::Number {
-                int_value: None,
-                value: 1.2,
+            "+123.2",
+            TokenKind::Number {
+                value: "+123.2".into(),
             },
         ),
         (
-            "100",
-            Token::Number {
-                int_value: Some(100),
-                value: 100.,
+            "+123e5",
+            TokenKind::Number {
+                value: "+123e5".into(),
             },
         ),
         (
-            "+122.2",
-            Token::Number {
-                int_value: None,
-                value: 122.2,
+            "-123.2",
+            TokenKind::Number {
+                value: "-123.2".into(),
             },
         ),
         (
-            "-122.2",
-            Token::Number {
-                int_value: None,
-                value: -122.2,
+            "123px",
+            TokenKind::Dimension {
+                value: "123".into(),
+                unit: "px".into(),
             },
         ),
         (
-            ".1",
-            Token::Number {
-                int_value: None,
-                value: 0.1,
+            "123%",
+            TokenKind::Percent {
+                value: "123".into(),
             },
         ),
     ];
 
-    for (source, token) in tests {
-        assert_eq!(Lexer::new(source).next(), token);
+    for (source, kind) in tests {
+        assert_kind(source, kind);
     }
 }
 
 #[test]
-fn test_dimension() {
+fn test_comments() {
     let tests = [
-        (
-            "123px",
-            Token::Dimension {
-                value: 123.,
-                int_value: Some(123),
-                unit: "px",
-            },
-        ),
-        (
-            "123.4em",
-            Token::Dimension {
-                value: 123.4,
-                int_value: None,
-                unit: "em",
-            },
-        ),
-        (
-            ".123em",
-            Token::Dimension {
-                value: 0.123,
-                int_value: None,
-                unit: "em",
-            },
-        ),
-        ("100%", Token::Percentage { value: 1. }),
-        ("30%", Token::Percentage { value: 0.3 }),
+        ("/*       */", TokenKind::EOF),
+        ("/*       */(", TokenKind::OpenParen),
+        ("/*       *//", TokenKind::Delim { value: '/' }),
     ];
 
-    for (source, token) in tests {
-        assert_eq!(Lexer::new(source).next(), token);
+    for (source, kind) in tests {
+        assert_kind(source, kind);
     }
 }

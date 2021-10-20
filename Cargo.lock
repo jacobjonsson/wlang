@@ -28,6 +28,14 @@ version = "0.1.0"
 [[package]]
 name = "css_lexer"
 version = "0.1.0"
+dependencies = [
+ "css_ast",
+ "cursor",
+]
+
+[[package]]
+name = "cursor"
+version = "0.1.0"
 
 [[package]]
 name = "dtoa"
