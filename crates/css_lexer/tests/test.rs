@@ -31,9 +31,11 @@ fn test_hash() {
         assert_kind(source, kind);
     }
 }
+
 #[test]
 fn test_string() {
     let tests = [
+        ("\"\"", TokenKind::String { value: "".into() }),
         (
             "\"abc\"",
             TokenKind::String {
@@ -126,6 +128,12 @@ fn test_name_like() {
                 value: "abc".into(),
             },
         ),
+        (
+            "abc\\:def",
+            TokenKind::Ident {
+                value: "abc\\:def".into(),
+            },
+        ),
     ];
 
     for (source, kind) in tests {
@@ -192,6 +200,13 @@ fn test_comments() {
         ("/*       */", TokenKind::EOF),
         ("/*       */(", TokenKind::OpenParen),
         ("/*       *//", TokenKind::Delim { value: '/' }),
+        (
+            "/**
+        
+        
+        */",
+            TokenKind::EOF,
+        ),
     ];
 
     for (source, kind) in tests {

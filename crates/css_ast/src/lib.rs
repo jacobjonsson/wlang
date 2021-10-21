@@ -1,22 +1,31 @@
-pub use crate::{property::*, selector::*, token::*, value::*};
+pub use crate::{selector::*, value::*};
 
-mod property;
 mod selector;
-mod token;
 mod value;
 
+#[derive(Debug)]
 pub struct StyleSheet {
     pub rules: Vec<Rule>,
 }
 
+#[derive(Debug)]
 pub enum Rule {
+    At(AtRule),
     Qualified(QualifiedRule),
-    AtRule(AtRule),
 }
 
-pub enum AtRule {}
+#[derive(Debug)]
+pub struct AtRule {}
 
+#[derive(Debug)]
 pub struct QualifiedRule {
-    pub selector: Vec<ComplexSelector>,
-    pub items: Vec<Property>,
+    pub prelude: Vec<Selector>,
+    pub declarations: Vec<Declaration>,
+}
+
+#[derive(Debug)]
+pub struct Declaration {
+    pub name: TextValue,
+    pub values: Value,
+    pub important: bool,
 }

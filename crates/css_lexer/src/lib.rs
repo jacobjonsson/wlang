@@ -107,11 +107,17 @@ pub struct Token {
     pub kind: TokenKind,
 }
 
-pub struct Lexer<C: Cursor> {
+pub struct Lexer<C>
+where
+    C: Cursor<Item = char>,
+{
     cursor: C,
 }
 
-impl<C: Cursor> Lexer<C> {
+impl<C> Lexer<C>
+where
+    C: Cursor<Item = char>,
+{
     pub fn new(cursor: C) -> Self {
         Lexer { cursor }
     }
@@ -236,7 +242,7 @@ impl<C: Cursor> Lexer<C> {
                 self.cursor.increment();
                 if self.would_start_a_number() {
                     self.cursor.reset_to(start);
-                    let kind = self.consume_numeric();
+                    let kind = self.consume_numeric()?;
                     let end = self.cursor.current_position();
                     Ok(Token { start, end, kind })
                 } else {
@@ -254,7 +260,7 @@ impl<C: Cursor> Lexer<C> {
                 self.cursor.increment();
                 if self.would_start_a_number() {
                     self.cursor.reset_to(start);
-                    let kind = self.consume_numeric();
+                    let kind = self.consume_numeric()?;
                     let end = self.cursor.current_position();
                     Ok(Token { start, end, kind })
                 } else if self.cursor.current() == Some('-') && self.cursor.peek() == Some('>') {
@@ -323,7 +329,7 @@ impl<C: Cursor> Lexer<C> {
                 let start = self.cursor.current_position();
                 self.cursor.increment();
                 if self.would_start_an_identifier() {
-                    let value = self.consume_name();
+                    let value = self.consume_name()?;
                     let end = self.cursor.current_position();
                     Ok(Token {
                         start,
@@ -345,7 +351,7 @@ impl<C: Cursor> Lexer<C> {
                 self.cursor.increment();
                 if self.would_start_a_number() {
                     self.cursor.reset_to(start);
-                    let kind = self.consume_numeric();
+                    let kind = self.consume_numeric()?;
                     let end = self.cursor.current_position();
                     Ok(Token { start, end, kind })
                 } else {
@@ -360,7 +366,7 @@ impl<C: Cursor> Lexer<C> {
 
             Some(ch) if ch.is_digit(10) => {
                 let start = self.cursor.current_position();
-                let kind = self.consume_numeric();
+                let kind = self.consume_numeric()?;
                 let end = self.cursor.current_position();
                 Ok(Token { start, end, kind })
             }
@@ -386,7 +392,15 @@ impl<C: Cursor> Lexer<C> {
                 })
             }
 
-            Some('\\') => todo!(),
+            Some('\\') => {
+                println!(
+                    "{:?}-{:?}-{:?}",
+                    self.cursor.current(),
+                    self.cursor.peek(),
+                    self.cursor.peek_nth(2)
+                );
+                todo!("Identifier starting with escape character")
+            }
 
             // `#ffffff`, `#my-id`
             Some('#') => {
@@ -395,7 +409,7 @@ impl<C: Cursor> Lexer<C> {
                 self.cursor.increment();
                 if matches!(self.cursor.current(), Some(ch) if is_name_continue(ch)) {
                     let is_id = self.would_start_an_identifier();
-                    let value = self.consume_name();
+                    let value = self.consume_name()?;
                     let end = self.cursor.current_position();
                     Ok(Token {
                         start,
@@ -462,6 +476,14 @@ impl<C: Cursor> Lexer<C> {
         }
     }
 
+    /// https://www.w3.org/TR/css-syntax-3/#check-if-two-code-points-are-a-valid-escape
+    fn is_valid_escape(&self) -> bool {
+        match self.cursor.current() {
+            Some('\\') => return self.cursor.peek() != Some('\n'),
+            _ => false,
+        }
+    }
+
     fn would_start_an_identifier(&self) -> bool {
         match self.cursor.current() {
             Some(ch) if is_name_start(ch) => true,
@@ -483,7 +505,11 @@ impl<C: Cursor> Lexer<C> {
                 self.cursor.increment();
                 self.cursor.increment();
 
-                while self.cursor.current() != Some('*') && self.cursor.peek() != Some('/') {
+                loop {
+                    if self.cursor.current() == Some('*') && self.cursor.peek() == Some('/') {
+                        break;
+                    }
+
                     self.cursor.increment();
                 }
 
@@ -512,16 +538,16 @@ impl<C: Cursor> Lexer<C> {
     }
 
     /// https://www.w3.org/TR/css-syntax-3/#consume-a-numeric-token
-    fn consume_numeric(&mut self) -> TokenKind {
+    fn consume_numeric(&mut self) -> LexerResult<TokenKind> {
         let value = self.consume_number();
         if self.would_start_an_identifier() {
-            let unit = self.consume_name();
-            TokenKind::Dimension { value, unit }
+            let unit = self.consume_name()?;
+            Ok(TokenKind::Dimension { value, unit })
         } else if self.cursor.current() == Some('%') {
             self.cursor.increment();
-            TokenKind::Percent { value }
+            Ok(TokenKind::Percent { value })
         } else {
-            TokenKind::Number { value }
+            Ok(TokenKind::Number { value })
         }
     }
 
@@ -605,7 +631,7 @@ impl<C: Cursor> Lexer<C> {
     }
 
     fn consume_name_like(&mut self) -> LexerResult<TokenKind> {
-        let value = self.consume_name();
+        let value = self.consume_name()?;
 
         // `url(`
         if value.to_lowercase().as_str() == "url" && self.cursor.current() == Some('(') {
@@ -655,30 +681,84 @@ impl<C: Cursor> Lexer<C> {
 
         loop {
             match self.cursor.current() {
-                None => return Err(LexerError::UnterminatedString),
-                Some('\n') => return Err(LexerError::UnterminatedString),
-                Some('\\') => todo!(),
-                Some(ch) if ch == end_char => break,
-                Some(ch) => result.push(ch),
+                None => {
+                    return Err(LexerError::UnterminatedString);
+                }
+                Some('\n') => {
+                    return Err(LexerError::UnterminatedString);
+                }
+                Some('\\') => match self.cursor.peek() {
+                    None => {
+                        continue;
+                    }
+                    Some('\n') => {
+                        self.cursor.increment();
+                    }
+                    Some(ch) => {
+                        result.push(ch);
+                    }
+                },
+                Some(ch) if ch == end_char => {
+                    return Ok(result);
+                }
+                Some(ch) => {
+                    result.push(ch);
+                }
             };
 
             self.cursor.increment();
         }
-
-        Ok(result)
     }
 
-    fn consume_name(&mut self) -> String {
+    fn consume_name(&mut self) -> LexerResult<String> {
         let mut name = String::new();
-        while let Some(ch) = self.cursor.current() {
-            if !is_name_continue(ch) {
-                break;
+
+        loop {
+            match self.cursor.current() {
+                Some(ch) if is_name_continue(ch) => {
+                    name.push(ch);
+                }
+
+                Some(ch) if self.is_valid_escape() => {
+                    self.cursor.increment();
+                    name.push(ch);
+                    name.push_str(&self.consume_valid_escape()?);
+                }
+
+                _ => {
+                    return Ok(name);
+                }
             }
 
-            name.push(ch);
             self.cursor.increment();
         }
-        name
+    }
+
+    /// https://www.w3.org/TR/css-syntax-3/#consume-an-escaped-code-point
+    fn consume_valid_escape(&mut self) -> LexerResult<String> {
+        match self.cursor.current() {
+            Some(ch) if is_hex_digit(ch) => {
+                let mut result = String::from(ch);
+                self.cursor.increment();
+                loop {
+                    match self.cursor.current() {
+                        Some(ch) if is_hex_digit(ch) => {
+                            if result.len() >= 6 {
+                                return Ok(result);
+                            }
+
+                            result.push(ch);
+                        }
+
+                        _ => return Ok(result),
+                    }
+                }
+            }
+
+            Some(ch) => return Ok(ch.into()),
+
+            None => return Err(LexerError::EOF),
+        }
     }
 }
 
@@ -717,4 +797,12 @@ fn is_name_continue(c: char) -> bool {
             c if c.is_digit(10) || c == '-' => true,
             _ => false,
         }
+}
+
+fn is_hex_digit(c: char) -> bool {
+    match c {
+        'a'..='f' => true,
+        'A'..='F' => true,
+        _ => false,
+    }
 }

@@ -1,78 +1,94 @@
-/// This file contains the AST nodes for css selectors
-/// https://www.w3.org/TR/selectors-4/#selector
+use crate::{TextValue, Value};
 
-/// https://www.w3.org/TR/selectors-4/#simple
+#[derive(Debug)]
+pub struct Selector {
+    pub selectors: Vec<SimpleSelector>,
+}
+
 #[derive(Debug)]
 pub enum SimpleSelector {
-    Type {
-        name: String,
-    },
+    // `*`
     Universal,
-    Attribute {
-        name: String,
-        matcher: Option<AttributeSelectorMatcher>,
-    },
-    Class {
-        name: String,
-    },
-    Id {
-        name: String,
-    },
-    PseudoElement {
-        name: String,
-    },
-    PseudoClass {
-        name: String,
-        args: Vec<()>,
-    },
-}
 
-#[derive(Debug)]
-pub enum AttributeSelectorMatcher {
-    /// `=`
-    Equals,
+    // `#my-id`
+    Id(IdSelector),
 
-    /// `~=`
-    TildeEquals,
+    // `button`
+    Type(TypeSelector),
 
-    /// `|=`
-    BarEquals,
+    // `.my-class`
+    Class(ClassSelector),
 
-    /// `^=`
-    CaretEquals,
+    // `[name="hello"]`
+    Attribute(AttributeSelector),
 
-    /// `$=`
-    DollarEquals,
+    // :last-child
+    PseudoClass(PseudoClassSelector),
 
-    /// `*=`
-    AsteriskEquals,
-}
+    // ::first-line
+    PseudoElement(PseudoElementSelector),
 
-/// https://www.w3.org/TR/selectors-4/#compound
-#[derive(Debug)]
-pub struct CompoundSelector {
-    pub selectors: Vec<SimpleSelector>,
+    /// https://www.w3.org/TR/selectors-4/#combinators
+    /// Combinators
 
-    pub combinator: Option<SelectorCombinator>,
-}
-
-#[derive(Debug)]
-pub struct ComplexSelector {
-    pub selectors: Vec<CompoundSelector>,
-}
-
-/// https://www.w3.org/TR/selectors-4/#selector-combinator
-#[derive(Debug)]
-pub enum SelectorCombinator {
     /// ` `
     Descendant,
-
     /// `+`
     NextSibling,
-
     /// `>`
     Child,
-
     /// `~`
     LaterSibling,
+}
+
+#[derive(Debug)]
+pub struct IdSelector {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct TypeSelector {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct ClassSelector {
+    pub value: String,
+}
+
+#[derive(Debug)]
+pub struct AttributeSelector {
+    pub attribute: TextValue,
+    // Can only really be `Text` or `String`
+    pub value: Value,
+    pub matcher: AttributeMatcher,
+    // `i` or `s`
+    pub modifier: char,
+}
+
+#[derive(Debug)]
+pub enum AttributeMatcher {
+    /// `=`
+    Equals,
+    /// `~=`
+    Tilde,
+    /// `|=`
+    Bar,
+    /// `^=`
+    Caret,
+    /// `$=`
+    Dollar,
+    /// `*=`
+    Asterisk,
+}
+
+#[derive(Debug)]
+pub struct PseudoClassSelector {
+    pub value: String,
+    pub args: Option<Vec<Value>>,
+}
+
+#[derive(Debug)]
+pub struct PseudoElementSelector {
+    pub value: String,
 }

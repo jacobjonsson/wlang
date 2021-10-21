@@ -1,17 +1,19 @@
 use std::str::CharIndices;
 
 pub trait Cursor {
-    /// Returns the current character without incrementing the lexer
-    fn current(&self) -> Option<char>;
+    type Item;
+
+    /// Returns the current item without incrementing the lexer
+    fn current(&self) -> Option<Self::Item>;
 
     /// Returns the position in the source of the current char
     fn current_position(&self) -> usize;
 
-    /// Returns the next character without incrementing the lexer
-    fn peek(&self) -> Option<char>;
+    /// Returns the next item without incrementing the lexer
+    fn peek(&self) -> Option<Self::Item>;
 
-    /// Returns the nth character without incrementing the lexer
-    fn peek_nth(&self, n: usize) -> Option<char>;
+    /// Returns the nth item without incrementing the lexer
+    fn peek_nth(&self, n: usize) -> Option<Self::Item>;
 
     /// Returns a slice of the source given start and end positions
     fn slice(&self, start: usize, end: usize) -> &str;
@@ -42,6 +44,8 @@ impl<'a> StringCursor<'a> {
 }
 
 impl<'a> Cursor for StringCursor<'a> {
+    type Item = char;
+
     fn current(&self) -> Option<char> {
         self.iter.clone().next().map(|i| i.1)
     }
