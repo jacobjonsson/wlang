@@ -38,6 +38,10 @@ impl Parse {
 
         s
     }
+
+    pub fn syntax(&self) -> SyntaxNode {
+        SyntaxNode::new_root(self.green_node.clone())
+    }
 }
 
 #[cfg(test)]

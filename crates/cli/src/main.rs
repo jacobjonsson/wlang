@@ -1,3 +1,4 @@
+use ast::Root;
 use parser::parse;
 use std::io::{self, Write};
 
@@ -15,6 +16,12 @@ fn main() -> io::Result<()> {
 
         let parse = parse(&input);
         println!("{}", parse.debug_tree());
+
+        let syntax = parse.syntax();
+
+        for error in ast::validation::validate(&syntax) {
+            println!("{}", error);
+        }
 
         input.clear();
     }

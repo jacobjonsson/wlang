@@ -61,6 +61,8 @@ impl From<TokenKind> for SyntaxKind {
 }
 
 pub type SyntaxNode = rowan::SyntaxNode<WLanguage>;
+pub type SyntaxToken = rowan::SyntaxToken<WLanguage>;
+pub type SyntaxElement = rowan::SyntaxElement<WLanguage>;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum WLanguage {}

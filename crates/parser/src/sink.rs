@@ -85,7 +85,7 @@ impl<'t, 'input> Sink<'t, 'input> {
         let Token { kind, text, .. } = self.tokens[self.cursor];
 
         self.builder
-            .token(WLanguage::kind_to_raw(kind.into()), text.into());
+            .token(WLanguage::kind_to_raw(kind.into()), text);
 
         self.cursor += 1;
     }

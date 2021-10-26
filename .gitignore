@@ -1,2 +1,5 @@
 /target
 .vscode
+fuzz/artifacts
+fuzz/target
+.DS_Store

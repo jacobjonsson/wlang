@@ -3,10 +3,15 @@
 version = 3
 
 [[package]]
+name = "arbitrary"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db55d72333851e17d572bec876e390cd3b11eb1ef53ae821dd9f3b653d2b4569"
+
+[[package]]
 name = "ast"
 version = "0.1.0"
 dependencies = [
- "parser",
  "syntax",
  "text-size",
 ]
@@ -24,13 +29,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bed554bd50246729a1ec158d08aa3235d1b69d94ad120ebe187e28894787e736"
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-dependencies = [
- "ast",
- "hir",
- "parser",
-]
+name = "cc"
+version = "1.0.71"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79c2681d6594606957bbb8631c4b90a7fcaaa72cdb714743a437b156d6a7eedd"
 
 [[package]]
 name = "countme"
@@ -39,32 +41,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "328b822bdcba4d4e402be8d9adb6eebf269f969f8eadef977a553ff3c4fbcb58"
 
 [[package]]
-name = "dissimilar"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31ad93652f40969dead8d4bf897a41e9462095152eb21c56e5830537e41179dd"
-
-[[package]]
 name = "drop_bomb"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9bda8e21c04aca2ae33ffc2fd8c23134f3cac46db123ba97bd9d3f3b8a4a85e1"
 
 [[package]]
-name = "expect-test"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2300477aab3a378f2ca00a4fbd4dc713654ab7ed790e4017493cb33656280633"
-dependencies = [
- "dissimilar",
- "once_cell",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "fuzz"
+version = "0.1.0"
+dependencies = [
+ "ast",
+ "hir",
+ "libfuzzer-sys",
+ "parser",
+]
 
 [[package]]
 name = "hashbrown"
@@ -78,7 +74,6 @@ version = "0.1.0"
 dependencies = [
  "ast",
  "la-arena",
- "parser",
  "smol_str",
  "syntax",
 ]
@@ -95,6 +90,16 @@ version = "0.1.0"
 dependencies = [
  "logos",
  "text-size",
+]
+
+[[package]]
+name = "libfuzzer-sys"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcf184a4b6b274f82a5df6b357da6055d3e82272327bba281c28bbba6f1664ef"
+dependencies = [
+ "arbitrary",
+ "cc",
 ]
 
 [[package]]
@@ -151,17 +156,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "once_cell"
-version = "1.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "692fcb63b64b1758029e0a96ee63e049ce8c5948587f2f7208df04625e5f6b56"
-
-[[package]]
 name = "parser"
 version = "0.1.0"
 dependencies = [
  "drop_bomb",
- "expect-test",
  "lexer",
  "rowan",
  "syntax",
