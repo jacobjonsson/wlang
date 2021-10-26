@@ -1,16 +1,16 @@
 ```
-use std::ui::{VStack, HStack, H1, Span};
-use std::ui::theme;
-use std::http::get;
-use std::io::console;
-use app::components::button::Button;
+import std::ui::{VStack, HStack, H1, Span};
+import std::ui::theme;
+import std::http::get;
+import std::io::console;
+import app::components::button::Button;
 
 func logValue(value: i32) {
     console.log(value);
 }
 
 // Items can be made public by using the pub keyword.
-pub comp MyApp(onClick: () -> ()) {
+export comp MyApp(onClick: () -> ()) {
     // State variables are created using the state keyword.
     state count = 0;
 
@@ -26,8 +26,9 @@ pub comp MyApp(onClick: () -> ()) {
     // Mutable variables can be created using the mut keyword.
     let mut b = 1;
 
-    onEffect {
-        logValue(count);
+    // An effectual block runs whenever any stateful variable inside it changes
+    effect {
+        logValue("The new count is \(count)");
         a += count;
     }
 
@@ -36,19 +37,20 @@ pub comp MyApp(onClick: () -> ()) {
         console.log("component was mounted");
     }
 
-    // Before the component updates, run this block
-    beforeUpdate {
+    // After the component updates, run this block
+    onUpdate {
         console.log("component is about to update");
-    }
-
-    // After the component has update, run this block
-    afterUpdated {
-        console.log("component has updated");
     }
 
     // Before the component is about to be destroyed, run this block
     onDestroy {
         console.log("Component is about to be destroyed);
+    }
+
+    VStack {
+        HStack {
+            Profile()
+        }
     }
 
     VStack(
@@ -59,9 +61,7 @@ pub comp MyApp(onClick: () -> ()) {
         }
     ) {
         HStack(spacing: theme.spacing.xs) {
-            H1("Count", color: theme.colors.gray500, fontWeight: theme.font.normal).
-
-            Span(count, color: theme.colors.gray700, fontWeight: theme.font.bold)
+            H1("Count ${count}", color: theme.colors.gray500, fontWeight: theme.font.normal).
         }
 
         Button(
