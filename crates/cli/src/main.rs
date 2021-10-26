@@ -1,4 +1,3 @@
-use ast::Root;
 use parser::parse;
 use std::io::{self, Write};
 
