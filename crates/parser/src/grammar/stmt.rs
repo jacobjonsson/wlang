@@ -70,7 +70,7 @@ Root@0..17
     Whitespace@15..16 " "
     VariableRef@16..17
       Ident@16..17 "a"
-error at 8..11: expected number, identifier, ‘-’ or ‘(’, but found ‘let’"#]],
+error at 8..11: expected number, identifier, `-` or `(`, but found let"#]],
         );
     }
 

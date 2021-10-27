@@ -38,9 +38,15 @@ impl From<TokenKind> for SyntaxKind {
     fn from(token_kind: TokenKind) -> Self {
         match token_kind {
             TokenKind::Whitespace => Self::Whitespace,
+            TokenKind::Comma => todo!(),
+            TokenKind::Semicolon => todo!(),
+            TokenKind::Colon => todo!(),
+            TokenKind::LiteralString => todo!(),
+            TokenKind::LiteralFalse => todo!(),
+            TokenKind::LiteralTrue => todo!(),
             TokenKind::Comment => Self::Comment,
             TokenKind::Ident => Self::Ident,
-            TokenKind::Number => Self::Number,
+            TokenKind::LiteralInteger => Self::Number,
             TokenKind::Plus => Self::Plus,
             TokenKind::Minus => Self::Minus,
             TokenKind::Star => Self::Star,

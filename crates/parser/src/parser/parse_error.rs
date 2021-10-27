@@ -70,7 +70,7 @@ mod tests {
             vec![TokenKind::Equals],
             Some(TokenKind::Ident),
             10..20,
-            "error at 10..20: expected ‘=’, but found identifier",
+            "error at 10..20: expected `=`, but found identifier",
         );
     }
 
@@ -80,7 +80,7 @@ mod tests {
             vec![TokenKind::RParen],
             None,
             5..6,
-            "error at 5..6: expected ‘)’",
+            "error at 5..6: expected `)`",
         );
     }
 
@@ -90,7 +90,7 @@ mod tests {
             vec![TokenKind::Plus, TokenKind::Minus],
             Some(TokenKind::Equals),
             0..1,
-            "error at 0..1: expected ‘+’ or ‘-’, but found ‘=’",
+            "error at 0..1: expected `+` or `-`, but found `=`",
         );
     }
 
@@ -98,14 +98,14 @@ mod tests {
     fn multiple_expected_did_find() {
         check(
             vec![
-                TokenKind::Number,
+                TokenKind::LiteralInteger,
                 TokenKind::Ident,
                 TokenKind::Minus,
                 TokenKind::LParen,
             ],
             Some(TokenKind::Let),
             100..105,
-            "error at 100..105: expected number, identifier, ‘-’ or ‘(’, but found ‘let’",
+            "error at 100..105: expected number, identifier, `-` or `(`, but found let",
         );
     }
 }

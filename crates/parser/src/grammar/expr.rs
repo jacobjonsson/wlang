@@ -54,7 +54,7 @@ fn expr_binding_power(parser: &mut Parser, minimum_binding_power: u8) -> Option<
             break;
         }
 
-        // Eat the operator’s token.
+        // Eat the operator's token.
         parser.bump();
 
         let marker = lhs.precede(parser);
@@ -70,7 +70,7 @@ fn expr_binding_power(parser: &mut Parser, minimum_binding_power: u8) -> Option<
 }
 
 fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
-    let cm = if parser.at(TokenKind::Number) {
+    let cm = if parser.at(TokenKind::LiteralInteger) {
         literal(parser)
     } else if parser.at(TokenKind::Ident) {
         variable_ref(parser)
@@ -87,7 +87,7 @@ fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
 }
 
 fn literal(parser: &mut Parser) -> CompletedMarker {
-    assert!(parser.at(TokenKind::Number));
+    assert!(parser.at(TokenKind::LiteralInteger));
 
     let marker = parser.start();
     parser.bump();
@@ -394,7 +394,7 @@ Root@0..4
     LParen@0..1 "("
     VariableRef@1..4
       Ident@1..4 "foo"
-error at 1..4: expected ‘+’, ‘-’, ‘*’, ‘/’ or ‘)’"#]],
+error at 1..4: expected `+`, `-`, `*`, `/` or `)`"#]],
         );
     }
 
@@ -410,8 +410,8 @@ Root@0..3
       Literal@1..2
         Number@1..2 "1"
       Plus@2..3 "+"
-error at 2..3: expected number, identifier, ‘-’ or ‘(’
-error at 2..3: expected ‘)’"#]],
+error at 2..3: expected number, identifier, `-` or `(`
+error at 2..3: expected `)`"#]],
         );
     }
 }

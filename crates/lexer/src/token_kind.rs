@@ -7,14 +7,32 @@ pub enum TokenKind {
     #[regex("[ \n]+")]
     Whitespace,
 
+    #[token(";")]
+    Semicolon,
+
+    #[token(":")]
+    Colon,
+
+    #[token(",")]
+    Comma,
+
     #[regex("//.*")]
     Comment,
 
-    #[regex("[A-Za-z][A-Za-z0-9]*")]
+    #[regex("[a-zA-Z_$][a-zA-Z0-9_$]*")]
     Ident,
 
     #[regex("[0-9]+")]
-    Number,
+    LiteralInteger,
+
+    #[regex("\"(\\\\.|[^\"\\\\])*\"")]
+    LiteralString,
+
+    #[token("true")]
+    LiteralTrue,
+
+    #[token("false")]
+    LiteralFalse,
 
     #[token("(")]
     LParen,
@@ -72,23 +90,29 @@ impl TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            Self::LiteralFalse => "false",
+            Self::LiteralTrue => "true",
             Self::Whitespace => "whitespace",
-            Self::Func => "‘func’",
-            Self::Comp => "‘Comp‘",
-            Self::Let => "‘let’",
+            Self::Comma => "`,`",
+            Self::Colon => "`:`",
+            Self::Semicolon => "`;`",
+            Self::Func => "func",
+            Self::Comp => "Comp",
+            Self::Let => "let",
             Self::Ident => "identifier",
-            Self::Number => "number",
-            Self::Plus => "‘+’",
-            Self::Minus => "‘-’",
-            Self::Star => "‘*’",
-            Self::Slash => "‘/’",
-            Self::Equals => "‘=’",
-            Self::LParen => "‘(’",
-            Self::RParen => "‘)’",
-            Self::LBrace => "‘{’",
-            Self::RBrace => "‘}’",
-            Self::LBracket => "‘[’",
-            Self::RBracket => "‘]’",
+            Self::LiteralInteger => "number",
+            Self::LiteralString => "string literal",
+            Self::Plus => "`+`",
+            Self::Minus => "`-`",
+            Self::Star => "`*`",
+            Self::Slash => "`/`",
+            Self::Equals => "`=`",
+            Self::LParen => "`(`",
+            Self::RParen => "`)`",
+            Self::LBrace => "`{`",
+            Self::RBrace => "`}`",
+            Self::LBracket => "`[`",
+            Self::RBracket => "`]`",
             Self::Comment => "comment",
             Self::Error => "an unrecognized token",
         })

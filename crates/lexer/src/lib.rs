@@ -66,6 +66,21 @@ mod tests {
     }
 
     #[test]
+    fn lex_comma() {
+        check(",", TokenKind::Comma);
+    }
+
+    #[test]
+    fn lex_semicolon() {
+        check(";", TokenKind::Semicolon);
+    }
+
+    #[test]
+    fn lex_colon() {
+        check(":", TokenKind::Colon);
+    }
+
+    #[test]
     fn lex_func() {
         check("func", TokenKind::Func);
     }
@@ -91,8 +106,18 @@ mod tests {
     }
 
     #[test]
+    fn lex_underscore_identifier() {
+        check("__abc123", TokenKind::Ident);
+    }
+
+    #[test]
+    fn lex_string_literal() {
+        check("\"hello world\"", TokenKind::LiteralString);
+    }
+
+    #[test]
     fn lex_number() {
-        check("12345", TokenKind::Number);
+        check("12345", TokenKind::LiteralInteger);
     }
 
     #[test]
