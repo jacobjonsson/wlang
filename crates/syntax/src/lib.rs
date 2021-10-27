@@ -1,14 +1,18 @@
 use lexer::TokenKind;
-use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
 
-#[derive(Debug, Copy, Clone, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(u16)]
 pub enum SyntaxKind {
+    Root,
+
     Tombstone,
     Error,
-    Root,
+
+    // Trivia
     Whitespace,
     Comment,
+
+    // Tokens
     Comma,
     Colon,
     Semicolon,
@@ -36,16 +40,9 @@ pub enum SyntaxKind {
     RBrace,
     LBracket,
     RBracket,
-    InfixExpr,
     Literal,
     Integer,
     String,
-    ParenExpr,
-    PrefixExpr,
-    VariableRef,
-    VariableDef,
-
-    // Keywords
     FuncKeyword,
     CompKeyword,
     LetKeyword,
@@ -55,6 +52,36 @@ pub enum SyntaxKind {
     OnMountKeyword,
     OnUpdateKeyword,
     OnDestroyKeyword,
+
+    // Nodes
+    BlockStmt,
+    FunctionDecl,
+    InfixExpr,
+    ParamList,
+    ParenExpr,
+    PrefixExpr,
+    VariableDef,
+    VariableRef,
+
+    // This variant is only used to guard against memory errors
+    // when converting from and into a u16.
+    #[doc(hidden)]
+    __LAST,
+}
+
+impl From<u16> for SyntaxKind {
+    #[inline]
+    fn from(d: u16) -> SyntaxKind {
+        assert!(d <= (SyntaxKind::__LAST as u16));
+        unsafe { std::mem::transmute::<u16, SyntaxKind>(d) }
+    }
+}
+
+impl From<SyntaxKind> for u16 {
+    #[inline]
+    fn from(k: SyntaxKind) -> Self {
+        k as u16
+    }
 }
 
 impl From<TokenKind> for SyntaxKind {
@@ -118,10 +145,10 @@ impl rowan::Language for WLanguage {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {
-        Self::Kind::from_u16(raw.0).unwrap()
+        SyntaxKind::from(raw.0)
     }
 
     fn kind_to_raw(kind: Self::Kind) -> rowan::SyntaxKind {
-        rowan::SyntaxKind(kind.to_u16().unwrap())
+        rowan::SyntaxKind(kind.into())
     }
 }

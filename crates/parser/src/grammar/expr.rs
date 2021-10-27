@@ -154,7 +154,7 @@ const LITERAL_FIRST: &[TokenKind] = &[
 ];
 
 /// Parses a literal expression
-fn parse_literal(parser: &mut Parser) -> CompletedMarker {
+pub(crate) fn parse_literal(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at_set(LITERAL_FIRST));
 
     let marker = parser.start();
@@ -162,15 +162,14 @@ fn parse_literal(parser: &mut Parser) -> CompletedMarker {
     marker.complete(parser, SyntaxKind::Literal)
 }
 
-fn parse_variable_ref(parser: &mut Parser) -> CompletedMarker {
+pub(super) fn parse_variable_ref(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::Ident));
-
     let marker = parser.start();
     parser.bump();
     marker.complete(parser, SyntaxKind::VariableRef)
 }
 
-fn parse_prefix_expression(parser: &mut Parser) -> CompletedMarker {
+pub(crate) fn parse_prefix_expression(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::Minus));
 
     let marker = parser.start();
@@ -185,7 +184,7 @@ fn parse_prefix_expression(parser: &mut Parser) -> CompletedMarker {
     marker.complete(parser, SyntaxKind::PrefixExpr)
 }
 
-fn parse_paren_expression(parser: &mut Parser) -> CompletedMarker {
+pub(crate) fn parse_paren_expression(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::LParen));
 
     let marker = parser.start();

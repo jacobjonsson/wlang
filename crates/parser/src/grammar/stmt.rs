@@ -1,3 +1,5 @@
+use crate::grammar::expr::parse_variable_ref;
+
 use super::expr::parse_expression;
 use super::CompletedMarker;
 use super::Parser;
@@ -7,12 +9,14 @@ use syntax::SyntaxKind;
 pub(super) fn parse_statement(parser: &mut Parser) -> Option<CompletedMarker> {
     if parser.at(TokenKind::LetKeyword) {
         Some(parse_variable_def(parser))
+    } else if parser.at(TokenKind::FuncKeyword) {
+        Some(parse_func(parser))
     } else {
         parse_expression(parser)
     }
 }
 
-fn parse_variable_def(parser: &mut Parser) -> CompletedMarker {
+pub(crate) fn parse_variable_def(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::LetKeyword));
     let marker = parser.start();
 
@@ -30,10 +34,69 @@ fn parse_variable_def(parser: &mut Parser) -> CompletedMarker {
     marker.complete(parser, SyntaxKind::VariableDef)
 }
 
+/// Parse a function statement
+/// func a() {}
+pub(crate) fn parse_func(parser: &mut Parser) -> CompletedMarker {
+    assert!(parser.at(TokenKind::FuncKeyword));
+    let marker = parser.start();
+
+    // Eat func keyword
+    parser.bump();
+
+    parse_variable_ref(parser);
+
+    parse_param_list(parser);
+
+    parse_block_stmt(parser);
+
+    marker.complete(parser, SyntaxKind::FunctionDecl)
+}
+
+pub(crate) fn parse_param_list(parser: &mut Parser) -> CompletedMarker {
+    assert!(parser.at(TokenKind::LParen));
+
+    let marker = parser.start();
+    parser.bump(); // Consume the leading paren
+
+    parser.expect(TokenKind::RParen);
+    marker.complete(parser, SyntaxKind::ParamList)
+}
+
+pub(crate) fn parse_block_stmt(parser: &mut Parser) -> CompletedMarker {
+    assert!(parser.at(TokenKind::LBrace));
+
+    let marker = parser.start();
+    parser.bump(); // Consume the leading brace
+
+    parser.expect(TokenKind::RBrace);
+    marker.complete(parser, SyntaxKind::BlockStmt)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::check;
     use expect_test::expect;
+
+    #[test]
+    fn parse_function_declaration() {
+        check(
+            "func foo() {}",
+            expect![[r#"
+Root@0..13
+  FunctionDecl@0..13
+    FuncKeyword@0..4 "func"
+    Whitespace@4..5 " "
+    VariableRef@5..8
+      Ident@5..8 "foo"
+    ParamList@8..11
+      LParen@8..9 "("
+      RParen@9..10 ")"
+    Whitespace@10..11 " "
+    BlockStmt@11..13
+      LBrace@11..12 "{"
+      RBrace@12..13 "}""#]],
+        )
+    }
 
     #[test]
     fn parse_variable_definition() {
