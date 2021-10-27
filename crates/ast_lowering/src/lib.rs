@@ -78,8 +78,11 @@ impl Database {
     }
 
     fn lower_literal(&mut self, expr: ast::Literal) -> hir::Expr {
-        let value = expr.parse();
-        hir::Expr::Literal { n: value }
+        match expr.kind() {
+            ast::LiteralKind::Integer(kind) => hir::Expr::Literal(hir::Literal::Integer {
+                value: kind.parse(),
+            }),
+        }
     }
 
     fn lower_paren_expr(&mut self, expr: ast::ParenExpr) -> hir::Expr {
@@ -155,14 +158,17 @@ mod tests {
 
     #[test]
     fn lower_expr_stmt() {
-        check_stmt("123", Stmt::Expr(Expr::Literal { n: Some(123) }))
+        check_stmt(
+            "123",
+            Stmt::Expr(Expr::Literal(Literal::Integer { value: Some(123) })),
+        )
     }
 
     #[test]
     fn lower_binary_expr() {
         let mut exprs = Arena::new();
-        let lhs = exprs.alloc(Expr::Literal { n: Some(1) });
-        let rhs = exprs.alloc(Expr::Literal { n: Some(2) });
+        let lhs = exprs.alloc(Expr::Literal(Literal::Integer { value: Some(1) }));
+        let rhs = exprs.alloc(Expr::Literal(Literal::Integer { value: Some(2) }));
 
         check_expr(
             "1 + 2",
@@ -178,7 +184,7 @@ mod tests {
     #[test]
     fn lower_binary_expr_without_rhs() {
         let mut exprs = Arena::new();
-        let lhs = exprs.alloc(Expr::Literal { n: Some(1) });
+        let lhs = exprs.alloc(Expr::Literal(Literal::Integer { value: Some(1) }));
         let rhs = exprs.alloc(Expr::Missing);
 
         check_expr(
@@ -194,7 +200,11 @@ mod tests {
 
     #[test]
     fn lower_literal() {
-        check_expr("1", Expr::Literal { n: Some(1) }, Database::default())
+        check_expr(
+            "1",
+            Expr::Literal(Literal::Integer { value: Some(1) }),
+            Database::default(),
+        )
     }
 
     #[test]
@@ -209,7 +219,7 @@ mod tests {
     #[test]
     fn test_unary_expr() {
         let mut exprs = Arena::new();
-        let expr = exprs.alloc(Expr::Literal { n: Some(10) });
+        let expr = exprs.alloc(Expr::Literal(Literal::Integer { value: Some(10) }));
 
         check_expr(
             "-10",

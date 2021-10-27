@@ -1,6 +1,5 @@
-use std::fmt;
-
 use logos::Logos;
+use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Logos)]
 pub enum TokenKind {

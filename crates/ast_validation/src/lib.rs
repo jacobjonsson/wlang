@@ -1,6 +1,6 @@
 use std::fmt;
 
-use ast::Literal;
+use ast::{Literal, LiteralKind};
 use syntax::SyntaxNode;
 use text_size::TextRange;
 
@@ -44,20 +44,24 @@ pub fn validate(node: &SyntaxNode) -> Vec<ValidationError> {
 
     for node in node.descendants() {
         if let Some(literal) = Literal::cast(node) {
-            validate_literal_integer(literal, &mut errors);
+            validate_literal(literal, &mut errors);
         }
     }
 
     errors
 }
 
-fn validate_literal_integer(literal: Literal, errors: &mut Vec<ValidationError>) {
-    if literal.parse().is_none() {
-        errors.push(ValidationError {
-            kind: ValidationErrorKind::NumberLiteralTooLarge,
-            range: literal.first_token().unwrap().text_range(),
-        })
-    }
+fn validate_literal(literal: Literal, errors: &mut Vec<ValidationError>) {
+    match literal.kind() {
+        LiteralKind::Integer(i) => {
+            if i.parse().is_none() {
+                errors.push(ValidationError {
+                    kind: ValidationErrorKind::NumberLiteralTooLarge,
+                    range: literal.first_token().unwrap().text_range(),
+                })
+            }
+        }
+    };
 }
 
 #[cfg(test)]
