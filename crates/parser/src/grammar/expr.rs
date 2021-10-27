@@ -28,12 +28,14 @@ impl BinaryOp {
     }
 }
 
-pub(super) fn expr(parser: &mut Parser) -> Option<CompletedMarker> {
-    expr_binding_power(parser, 0)
+/// Parses an expression
+pub(super) fn parse_expression(parser: &mut Parser) -> Option<CompletedMarker> {
+    parse_expression_bp(parser, 0)
 }
 
-fn expr_binding_power(parser: &mut Parser, minimum_binding_power: u8) -> Option<CompletedMarker> {
-    let mut lhs = lhs(parser)?;
+/// Parses an expression with the given binding power
+fn parse_expression_bp(parser: &mut Parser, minimum_binding_power: u8) -> Option<CompletedMarker> {
+    let mut lhs = parse_left_hand_side(parser)?;
 
     loop {
         let op = if parser.at(TokenKind::Plus) {
@@ -58,7 +60,7 @@ fn expr_binding_power(parser: &mut Parser, minimum_binding_power: u8) -> Option<
         parser.bump();
 
         let marker = lhs.precede(parser);
-        let parsed_rhs = expr_binding_power(parser, right_binding_power).is_some();
+        let parsed_rhs = parse_expression_bp(parser, right_binding_power).is_some();
         lhs = marker.complete(parser, SyntaxKind::InfixExpr);
 
         if !parsed_rhs {
@@ -69,15 +71,16 @@ fn expr_binding_power(parser: &mut Parser, minimum_binding_power: u8) -> Option<
     Some(lhs)
 }
 
-fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
+/// Parses the left hand side of an expression
+fn parse_left_hand_side(parser: &mut Parser) -> Option<CompletedMarker> {
     let cm = if parser.at(TokenKind::Integer) {
-        literal(parser)
+        parse_literal(parser)
     } else if parser.at(TokenKind::Ident) {
-        variable_ref(parser)
+        parse_variable_ref(parser)
     } else if parser.at(TokenKind::Minus) {
-        prefix_expr(parser)
+        parse_prefix_expression(parser)
     } else if parser.at(TokenKind::LParen) {
-        paren_expr(parser)
+        parse_paren_expression(parser)
     } else {
         parser.error();
         return None;
@@ -86,7 +89,14 @@ fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
     Some(cm)
 }
 
-fn literal(parser: &mut Parser) -> CompletedMarker {
+const LITERAL_FIRST: &[TokenKind] = &[TokenKind::Integer, TokenKind::String];
+
+/// Parses a literal expression
+fn parse_literal(parser: &mut Parser) -> CompletedMarker {
+    if !parser.at_set(LITERAL_FIRST) {
+        // return;
+    }
+
     assert!(parser.at(TokenKind::Integer));
 
     let marker = parser.start();
@@ -94,7 +104,7 @@ fn literal(parser: &mut Parser) -> CompletedMarker {
     marker.complete(parser, SyntaxKind::Literal)
 }
 
-fn variable_ref(parser: &mut Parser) -> CompletedMarker {
+fn parse_variable_ref(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::Ident));
 
     let marker = parser.start();
@@ -102,7 +112,7 @@ fn variable_ref(parser: &mut Parser) -> CompletedMarker {
     marker.complete(parser, SyntaxKind::VariableRef)
 }
 
-fn prefix_expr(parser: &mut Parser) -> CompletedMarker {
+fn parse_prefix_expression(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::Minus));
 
     let marker = parser.start();
@@ -112,18 +122,18 @@ fn prefix_expr(parser: &mut Parser) -> CompletedMarker {
 
     parser.bump();
 
-    expr_binding_power(parser, right_binding_power);
+    parse_expression_bp(parser, right_binding_power);
 
     marker.complete(parser, SyntaxKind::PrefixExpr)
 }
 
-fn paren_expr(parser: &mut Parser) -> CompletedMarker {
+fn parse_paren_expression(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::LParen));
 
     let marker = parser.start();
 
     parser.bump();
-    expr_binding_power(parser, 0);
+    parse_expression_bp(parser, 0);
     parser.expect(TokenKind::RParen);
 
     marker.complete(parser, SyntaxKind::ParenExpr)

@@ -3,7 +3,7 @@ use crate::{parser::ParseError, Parse};
 use lexer::Token;
 use rowan::{GreenNodeBuilder, Language};
 use std::mem;
-use syntax::WLanguage;
+use syntax::{SyntaxKind, WLanguage};
 
 pub(super) struct Sink<'t, 'input> {
     builder: GreenNodeBuilder<'static>,
@@ -24,41 +24,47 @@ impl<'t, 'input> Sink<'t, 'input> {
         }
     }
 
+    /// Generate the syntax tree with the control of events.
     pub(super) fn finish(mut self) -> Parse {
+        let mut forward_parents = Vec::new();
+
         for idx in 0..self.events.len() {
-            match mem::replace(&mut self.events[idx], Event::Placeholder) {
-                Event::StartNode {
+            match mem::replace(&mut self.events[idx], Event::tombstone()) {
+                Event::Start {
                     kind,
                     forward_parent,
                 } => {
-                    let mut kinds = vec![kind];
+                    // For events[A, B, C], B is A's forward_parent, C is B's forward_parent,
+                    // in the normal control flow, the parent-child relation: `A -> B -> C`,
+                    // while with the magic forward_parent, it writes: `C <- B <- A`.
 
+                    forward_parents.push(kind);
                     let mut idx = idx;
-                    let mut forward_parent = forward_parent;
+                    let mut fp = forward_parent;
 
-                    while let Some(fp) = forward_parent {
-                        idx += fp;
+                    while let Some(fwd) = fp {
+                        idx += fwd;
+                        fp = match mem::replace(&mut self.events[idx], Event::tombstone()) {
+                            Event::Start {
+                                kind,
+                                forward_parent,
+                            } => {
+                                forward_parents.push(kind);
+                                forward_parent
+                            }
 
-                        forward_parent = if let Event::StartNode {
-                            kind,
-                            forward_parent,
-                        } =
-                            mem::replace(&mut self.events[idx], Event::Placeholder)
-                        {
-                            kinds.push(kind);
-                            forward_parent
-                        } else {
-                            unreachable!();
+                            _ => unreachable!(),
                         }
                     }
 
-                    for kind in kinds.into_iter().rev() {
-                        self.builder.start_node(WLanguage::kind_to_raw(kind));
+                    for kind in forward_parents.drain(..).rev() {
+                        if kind != SyntaxKind::Tombstone {
+                            self.builder.start_node(WLanguage::kind_to_raw(kind));
+                        }
                     }
                 }
                 Event::AddToken => self.token(),
-                Event::FinishNode => self.builder.finish_node(),
-                Event::Placeholder => {}
+                Event::Finish => self.builder.finish_node(),
                 Event::Error(error) => self.errors.push(error),
             }
 

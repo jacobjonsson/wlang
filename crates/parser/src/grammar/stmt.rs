@@ -1,26 +1,33 @@
-use super::expr::expr;
+use super::expr::parse_expression;
 use super::CompletedMarker;
 use super::Parser;
 use lexer::TokenKind;
 use syntax::SyntaxKind;
 
-pub(super) fn stmt(parser: &mut Parser) -> Option<CompletedMarker> {
+pub(super) fn parse_statement(parser: &mut Parser) -> Option<CompletedMarker> {
     if parser.at(TokenKind::LetKeyword) {
-        Some(variable_def(parser))
+        Some(parse_variable_def(parser))
     } else {
-        expr(parser)
+        parse_expression(parser)
     }
 }
 
-fn variable_def(parser: &mut Parser) -> CompletedMarker {
+fn parse_variable_def(parser: &mut Parser) -> CompletedMarker {
     assert!(parser.at(TokenKind::LetKeyword));
     let marker = parser.start();
+
+    // Eat let keyword
     parser.bump();
+
+    // Eat mut keyword if present
+    if parser.at(TokenKind::MutKeyword) {
+        parser.bump();
+    }
 
     parser.expect(TokenKind::Ident);
     parser.expect(TokenKind::Equals);
 
-    expr(parser);
+    parse_expression(parser);
 
     marker.complete(parser, SyntaxKind::VariableDef)
 }
@@ -46,6 +53,26 @@ Root@0..13
     VariableRef@10..13
       Ident@10..13 "bar""#]],
         );
+    }
+
+    #[test]
+    fn parse_mutable_variable_definition() {
+        check(
+            "let mut foo = bar",
+            expect![[r#"
+Root@0..17
+  VariableDef@0..17
+    LetKeyword@0..3 "let"
+    Whitespace@3..4 " "
+    MutKeyword@4..7 "mut"
+    Whitespace@7..8 " "
+    Ident@8..11 "foo"
+    Whitespace@11..12 " "
+    Equals@12..13 "="
+    Whitespace@13..14 " "
+    VariableRef@14..17
+      Ident@14..17 "bar""#]],
+        )
     }
 
     #[test]

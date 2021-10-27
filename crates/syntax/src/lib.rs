@@ -4,6 +4,7 @@ use num_traits::{FromPrimitive, ToPrimitive};
 
 #[derive(Debug, Copy, Clone, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum SyntaxKind {
+    Tombstone,
     Error,
     Root,
     Whitespace,

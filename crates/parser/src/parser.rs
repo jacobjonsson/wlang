@@ -34,7 +34,7 @@ impl<'t, 'input> Parser<'t, 'input> {
 
     pub(crate) fn start(&mut self) -> Marker {
         let pos = self.events.len();
-        self.events.push(Event::Placeholder);
+        self.events.push(Event::tombstone());
         Marker::new(pos)
     }
 
@@ -83,7 +83,7 @@ impl<'t, 'input> Parser<'t, 'input> {
         }
     }
 
-    fn at_set(&mut self, set: &[TokenKind]) -> bool {
+    pub(crate) fn at_set(&mut self, set: &[TokenKind]) -> bool {
         self.peek().map_or(false, |k| set.contains(&k))
     }
 
