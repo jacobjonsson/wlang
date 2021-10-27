@@ -1,4 +1,3 @@
-pub mod validation;
 use syntax::{SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken};
 
 #[derive(Debug)]
@@ -95,8 +94,12 @@ impl Literal {
         }
     }
 
+    pub fn first_token(&self) -> Option<SyntaxToken> {
+        self.0.first_token()
+    }
+
     pub fn parse(&self) -> Option<u64> {
-        self.0.first_token().unwrap().text().parse().ok()
+        self.first_token().unwrap().text().parse().ok()
     }
 }
 

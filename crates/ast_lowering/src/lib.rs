@@ -1,82 +1,102 @@
-use crate::{BinaryOp, Expr, Stmt, UnaryOp};
 use la_arena::Arena;
 use syntax::SyntaxKind;
 
-#[derive(Debug, Default, PartialEq)]
+/// Lowers the given AST into HIR
+pub fn lower_root(root: ast::Root) -> (Database, Vec<hir::Stmt>) {
+    let mut database = Database::default();
+    let stmts = root
+        .stmts()
+        .filter_map(|stmt| database.lower_stmt(stmt))
+        .collect();
+
+    (database, stmts)
+}
+
+#[derive(Default, Debug, PartialEq)]
 pub struct Database {
-    exprs: Arena<Expr>,
+    exprs: Arena<hir::Expr>,
 }
 
 impl Database {
-    pub(crate) fn lower_stmt(&mut self, ast: ast::Stmt) -> Option<Stmt> {
-        let result = match ast {
-            ast::Stmt::VariableDef(ast) => Stmt::VariableDef {
-                name: ast.name()?.text().into(),
-                value: self.lower_expr(ast.value()),
+    pub fn lower_stmt(&mut self, stmt: ast::Stmt) -> Option<hir::Stmt> {
+        let result = match stmt {
+            ast::Stmt::VariableDef(variable_def) => hir::Stmt::VariableDef {
+                name: variable_def.name()?.text().into(),
+                value: self.lower_expr(variable_def.value()),
             },
-            ast::Stmt::Expr(ast) => Stmt::Expr(self.lower_expr(Some(ast))),
+            ast::Stmt::Expr(expr) => hir::Stmt::Expr(self.lower_expr(Some(expr))),
         };
 
         Some(result)
     }
 
-    pub(crate) fn lower_expr(&mut self, ast: Option<ast::Expr>) -> Expr {
-        if let Some(ast) = ast {
-            match ast {
-                ast::Expr::BinaryExpr(ast) => self.lower_binary(ast),
-                ast::Expr::Literal(ast) => Expr::Literal { n: ast.parse() },
-                ast::Expr::ParenExpr(ast) => self.lower_expr(ast.expr()),
-                ast::Expr::UnaryExpr(ast) => self.lower_unary(ast),
-                ast::Expr::VariableRef(ast) => self.lower_variable_ref(ast),
+    fn lower_expr(&mut self, expr: Option<ast::Expr>) -> hir::Expr {
+        if let Some(expr) = expr {
+            match expr {
+                ast::Expr::BinaryExpr(expr) => self.lower_binary_expr(expr),
+                ast::Expr::Literal(expr) => self.lower_literal(expr),
+                ast::Expr::ParenExpr(expr) => self.lower_paren_expr(expr),
+                ast::Expr::UnaryExpr(expr) => self.lower_unary_expr(expr),
+                ast::Expr::VariableRef(expr) => self.lower_variable_ref(expr),
             }
         } else {
-            Expr::Missing
+            hir::Expr::Missing
         }
     }
 
-    fn lower_binary(&mut self, ast: ast::BinaryExpr) -> Expr {
-        let op = match ast.op().unwrap().kind() {
-            SyntaxKind::Plus => BinaryOp::Add,
-            SyntaxKind::Minus => BinaryOp::Sub,
-            SyntaxKind::Star => BinaryOp::Mul,
-            SyntaxKind::Slash => BinaryOp::Div,
+    fn lower_binary_expr(&mut self, expr: ast::BinaryExpr) -> hir::Expr {
+        let op = match expr.op().unwrap().kind() {
+            SyntaxKind::Plus => hir::BinaryOp::Add,
+            SyntaxKind::Minus => hir::BinaryOp::Sub,
+            SyntaxKind::Slash => hir::BinaryOp::Div,
+            SyntaxKind::Star => hir::BinaryOp::Mul,
             _ => unreachable!(),
         };
 
-        let lhs = self.lower_expr(ast.lhs());
-        let rhs = self.lower_expr(ast.rhs());
+        let lhs = self.lower_expr(expr.lhs());
+        let rhs = self.lower_expr(expr.rhs());
 
-        Expr::Binary {
-            op,
+        hir::Expr::Binary {
             lhs: self.exprs.alloc(lhs),
+            op,
             rhs: self.exprs.alloc(rhs),
         }
     }
 
-    fn lower_unary(&mut self, ast: ast::UnaryExpr) -> Expr {
-        let op = match ast.op().unwrap().kind() {
-            SyntaxKind::Minus => UnaryOp::Neg,
+    fn lower_unary_expr(&mut self, expr: ast::UnaryExpr) -> hir::Expr {
+        let op = match expr.op().unwrap().kind() {
+            SyntaxKind::Minus => hir::UnaryOp::Neg,
             _ => unreachable!(),
         };
 
-        let expr = self.lower_expr(ast.expr());
+        let inner_expr = self.lower_expr(expr.expr());
 
-        Expr::Unary {
+        hir::Expr::Unary {
+            expr: self.exprs.alloc(inner_expr),
             op,
-            expr: self.exprs.alloc(expr),
         }
     }
 
-    fn lower_variable_ref(&mut self, ast: ast::VariableRef) -> Expr {
-        Expr::VariableRef {
-            var: ast.name().unwrap().text().into(),
-        }
+    fn lower_literal(&mut self, expr: ast::Literal) -> hir::Expr {
+        let value = expr.parse();
+        hir::Expr::Literal { n: value }
+    }
+
+    fn lower_paren_expr(&mut self, expr: ast::ParenExpr) -> hir::Expr {
+        self.lower_expr(expr.expr())
+    }
+
+    fn lower_variable_ref(&mut self, expr: ast::VariableRef) -> hir::Expr {
+        let name = expr.name().unwrap().text().into();
+        hir::Expr::VariableRef { var: name }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Database;
+    use hir::*;
 
     fn parse(input: &str) -> ast::Root {
         ast::Root::cast(parser::parse(input).syntax()).unwrap()

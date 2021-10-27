@@ -1,12 +1,14 @@
 [package]
-name = "cli"
+name = "ast_validation"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parser = { path = "../parser" }
 ast = { path = "../ast" }
-ast_validation = { path = "../ast_validation" }
-hir = {path = "../hir"}
+syntax = { path = "../syntax" }
+text-size = "1.1.0"
+
+[dev-dependencies]
+parser = {path = "../parser"}

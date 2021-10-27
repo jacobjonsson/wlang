@@ -18,7 +18,7 @@ fn main() -> io::Result<()> {
 
         let syntax = parse.syntax();
 
-        for error in ast::validation::validate(&syntax) {
+        for error in ast_validation::validate(&syntax) {
             println!("{}", error);
         }
 

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::Literal;
+use ast::Literal;
 use syntax::SyntaxNode;
 use text_size::TextRange;
 
@@ -55,7 +55,7 @@ fn validate_literal_integer(literal: Literal, errors: &mut Vec<ValidationError>)
     if literal.parse().is_none() {
         errors.push(ValidationError {
             kind: ValidationErrorKind::NumberLiteralTooLarge,
-            range: literal.0.first_token().unwrap().text_range(),
+            range: literal.first_token().unwrap().text_range(),
         })
     }
 }
