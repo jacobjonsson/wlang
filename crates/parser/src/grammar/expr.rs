@@ -75,6 +75,12 @@ fn parse_expression_bp(parser: &mut Parser, minimum_binding_power: u8) -> Option
 fn parse_left_hand_side(parser: &mut Parser) -> Option<CompletedMarker> {
     let cm = if parser.at(TokenKind::Integer) {
         parse_literal(parser)
+    } else if parser.at(TokenKind::String) {
+        parse_literal(parser)
+    } else if parser.at(TokenKind::True) {
+        parse_literal(parser)
+    } else if parser.at(TokenKind::False) {
+        parse_literal(parser)
     } else if parser.at(TokenKind::Ident) {
         parse_variable_ref(parser)
     } else if parser.at(TokenKind::Minus) {
@@ -89,15 +95,16 @@ fn parse_left_hand_side(parser: &mut Parser) -> Option<CompletedMarker> {
     Some(cm)
 }
 
-const LITERAL_FIRST: &[TokenKind] = &[TokenKind::Integer, TokenKind::String];
+const LITERAL_FIRST: &[TokenKind] = &[
+    TokenKind::Integer,
+    TokenKind::String,
+    TokenKind::True,
+    TokenKind::False,
+];
 
 /// Parses a literal expression
 fn parse_literal(parser: &mut Parser) -> CompletedMarker {
-    if !parser.at_set(LITERAL_FIRST) {
-        // return;
-    }
-
-    assert!(parser.at(TokenKind::Integer));
+    assert!(parser.at_set(LITERAL_FIRST));
 
     let marker = parser.start();
     parser.bump();
@@ -143,6 +150,39 @@ fn parse_paren_expression(parser: &mut Parser) -> CompletedMarker {
 mod tests {
     use crate::check;
     use expect_test::expect;
+
+    #[test]
+    fn parse_true() {
+        check(
+            "true",
+            expect![[r#"
+Root@0..4
+  Literal@0..4
+    True@0..4 "true""#]],
+        )
+    }
+
+    #[test]
+    fn parse_false() {
+        check(
+            "false",
+            expect![[r#"
+Root@0..5
+  Literal@0..5
+    False@0..5 "false""#]],
+        )
+    }
+
+    #[test]
+    fn parse_string() {
+        check(
+            "\"abc\"",
+            expect![[r#"
+Root@0..5
+  Literal@0..5
+    String@0..5 "\"abc\"""#]],
+        )
+    }
 
     #[test]
     fn parse_number() {
@@ -420,7 +460,7 @@ Root@0..3
       Literal@1..2
         Integer@1..2 "1"
       Plus@2..3 "+"
-error at 2..3: expected number, identifier, `-` or `(`
+error at 2..3: expected number, string, true, false, identifier, `-` or `(`
 error at 2..3: expected `)`"#]],
         );
     }

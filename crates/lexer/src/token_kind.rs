@@ -114,7 +114,7 @@ impl fmt::Display for TokenKind {
             Self::Semicolon => "`;`",
             Self::Ident => "identifier",
             Self::Integer => "number",
-            Self::String => "string literal",
+            Self::String => "string",
             Self::Plus => "`+`",
             Self::Minus => "`-`",
             Self::Star => "`*`",

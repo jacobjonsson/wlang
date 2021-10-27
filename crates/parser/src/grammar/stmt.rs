@@ -20,9 +20,7 @@ fn parse_variable_def(parser: &mut Parser) -> CompletedMarker {
     parser.bump();
 
     // Eat mut keyword if present
-    if parser.at(TokenKind::MutKeyword) {
-        parser.bump();
-    }
+    parser.eat(TokenKind::MutKeyword);
 
     parser.expect(TokenKind::Ident);
     parser.expect(TokenKind::Equals);
@@ -97,7 +95,7 @@ Root@0..17
     Whitespace@15..16 " "
     VariableRef@16..17
       Ident@16..17 "a"
-error at 8..11: expected number, identifier, `-` or `(`, but found let"#]],
+error at 8..11: expected number, string, true, false, identifier, `-` or `(`, but found let"#]],
         );
     }
 

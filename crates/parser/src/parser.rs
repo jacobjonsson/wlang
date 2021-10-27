@@ -44,6 +44,15 @@ impl<'t, 'input> Parser<'t, 'input> {
         self.events.push(Event::AddToken);
     }
 
+    pub(crate) fn eat(&mut self, kind: TokenKind) -> bool {
+        if self.peek() == Some(kind) {
+            self.bump();
+            true
+        } else {
+            false
+        }
+    }
+
     fn peek(&mut self) -> Option<TokenKind> {
         self.source.peek_kind()
     }
