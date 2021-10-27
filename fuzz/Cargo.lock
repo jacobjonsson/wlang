@@ -17,6 +17,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ast_lowering"
+version = "0.1.0"
+dependencies = [
+ "ast",
+ "hir",
+ "la-arena",
+ "syntax",
+]
+
+[[package]]
+name = "ast_validation"
+version = "0.1.0"
+dependencies = [
+ "ast",
+ "syntax",
+ "text-size",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -57,6 +76,8 @@ name = "fuzz"
 version = "0.1.0"
 dependencies = [
  "ast",
+ "ast_lowering",
+ "ast_validation",
  "hir",
  "libfuzzer-sys",
  "parser",

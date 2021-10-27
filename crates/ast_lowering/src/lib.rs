@@ -19,6 +19,10 @@ pub struct Database {
 }
 
 impl Database {
+    pub fn exprs(&self) -> &Arena<Expr> {
+        &self.exprs
+    }
+
     pub fn lower_stmt(&mut self, stmt: ast::Stmt) -> Option<Stmt> {
         let result = match stmt {
             ast::Stmt::VariableDef(variable_def) => Stmt::VariableDef {
@@ -51,7 +55,19 @@ impl Database {
             SyntaxKind::Minus => BinaryOp::Sub,
             SyntaxKind::Slash => BinaryOp::Div,
             SyntaxKind::Star => BinaryOp::Mul,
-            _ => unreachable!(),
+            SyntaxKind::Percent => BinaryOp::Rem,
+            SyntaxKind::AmpersandAmpersand => BinaryOp::And,
+            SyntaxKind::BarBar => BinaryOp::Or,
+            SyntaxKind::LessThan => BinaryOp::Lt,
+            SyntaxKind::LessThanEqual => BinaryOp::Le,
+            SyntaxKind::GreaterThan => BinaryOp::Gt,
+            SyntaxKind::GreaterThanEqual => BinaryOp::Ge,
+            SyntaxKind::BangEquals => BinaryOp::Ne,
+            SyntaxKind::EqualsEquals => BinaryOp::Eq,
+            kind => {
+                eprintln!("Does not know how to handle: {:?}", kind);
+                unreachable!()
+            }
         };
 
         let lhs = self.lower_expr(expr.lhs());

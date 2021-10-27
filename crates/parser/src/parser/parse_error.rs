@@ -3,10 +3,10 @@ use std::fmt;
 use text_size::TextRange;
 
 #[derive(Debug, PartialEq)]
-pub(crate) struct ParseError {
-    pub(super) expected: Vec<TokenKind>,
-    pub(super) found: Option<TokenKind>,
-    pub(super) range: TextRange,
+pub struct ParseError {
+    pub expected: Vec<TokenKind>,
+    pub found: Option<TokenKind>,
+    pub range: TextRange,
 }
 
 impl fmt::Display for ParseError {
@@ -22,17 +22,12 @@ impl fmt::Display for ParseError {
         let is_first = |idx| idx == 0;
         let is_last = |idx| idx == num_expected - 1;
 
-        println!("{:?}", self.expected);
-
         for (idx, expected_kind) in self.expected.iter().enumerate() {
             if is_first(idx) {
-                println!("Is first: {:?}", expected_kind);
                 write!(f, "{}", expected_kind)?;
             } else if is_last(idx) {
-                println!("Is last: {:?}", expected_kind);
                 write!(f, " or {}", expected_kind)?;
             } else {
-                println!("Is middle: {:?}", expected_kind);
                 write!(f, ", {}", expected_kind)?;
             }
         }

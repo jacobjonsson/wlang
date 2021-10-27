@@ -63,8 +63,14 @@ pub enum TokenKind {
     #[token("*")]
     Star,
 
+    #[token("%")]
+    Percent,
+
     #[token("=")]
     Equals,
+
+    #[token("==")]
+    EqualsEquals,
 
     #[token("!=")]
     BangEquals,
@@ -130,6 +136,7 @@ impl TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            Self::EqualsEquals => "`==`",
             Self::AmpersandAmpersand => "`&&`",
             Self::Bang => "`!`",
             Self::BangEquals => "`!=`",
@@ -158,6 +165,7 @@ impl fmt::Display for TokenKind {
             Self::OnDestroyKeyword => "onDestroy",
             Self::OnMountKeyword => "onMount",
             Self::OnUpdateKeyword => "onUpdate",
+            Self::Percent => "`%`",
             Self::Plus => "`+`",
             Self::RBrace => "`}`",
             Self::RBracket => "`]`",

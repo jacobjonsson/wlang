@@ -91,6 +91,11 @@ mod tests {
     }
 
     #[test]
+    fn lex_percent() {
+        check("%", TokenKind::Percent);
+    }
+
+    #[test]
     fn lex_single_character_identifier() {
         check("a", TokenKind::Ident);
     }

@@ -7,23 +7,49 @@ enum UnaryOp {
 impl UnaryOp {
     pub fn binding_power(&self) -> ((), u8) {
         match self {
-            UnaryOp::Negate => ((), 5),
+            UnaryOp::Negate => ((), 7),
         }
     }
 }
 
-enum BinaryOp {
+pub enum BinaryOp {
+    /// The `+` operator (addition)
     Add,
+    /// The `-` operator (subtraction)
     Sub,
+    /// The `*` operator (multiplication)
     Mul,
+    /// The `/` operator (division)
     Div,
+    /// The `%` operator (modulus)
+    Rem,
+    /// The `&&` operator (logical and)
+    And,
+    /// The `||` operator (logical or)
+    Or,
+    /// The `==` operator (equality)
+    Eq,
+    // The `<` operator (less than)
+    Lt,
+    // The `<=` operator (less than or equal to)
+    Le,
+    // The `!=` operator (not equal to)
+    Ne,
+    // The `>` operator (greater than)
+    Gt,
+    // The `>=` operator (greater than or equal to)
+    Ge,
 }
 
 impl BinaryOp {
     pub fn binding_power(&self) -> (u8, u8) {
         match self {
-            Self::Add | Self::Sub => (1, 2),
-            Self::Mul | Self::Div => (3, 4),
+            Self::Or => (1, 2),
+            Self::And => (2, 3),
+            Self::Eq | Self::Ne => (3, 4),
+            Self::Le | Self::Lt | Self::Ge | Self::Gt => (4, 5),
+            Self::Add | Self::Sub => (5, 6),
+            Self::Mul | Self::Div | Self::Rem => (6, 7),
         }
     }
 }
@@ -38,16 +64,9 @@ fn parse_expression_bp(parser: &mut Parser, minimum_binding_power: u8) -> Option
     let mut lhs = parse_left_hand_side(parser)?;
 
     loop {
-        let op = if parser.at(TokenKind::Plus) {
-            BinaryOp::Add
-        } else if parser.at(TokenKind::Minus) {
-            BinaryOp::Sub
-        } else if parser.at(TokenKind::Star) {
-            BinaryOp::Mul
-        } else if parser.at(TokenKind::Slash) {
-            BinaryOp::Div
-        } else {
-            break;
+        let op = match parse_binary_operator(parser) {
+            Some(op) => op,
+            None => break,
         };
 
         let (left_binding_power, right_binding_power) = op.binding_power();
@@ -69,6 +88,38 @@ fn parse_expression_bp(parser: &mut Parser, minimum_binding_power: u8) -> Option
     }
 
     Some(lhs)
+}
+
+fn parse_binary_operator(parser: &mut Parser) -> Option<BinaryOp> {
+    if parser.at(TokenKind::Plus) {
+        Some(BinaryOp::Add)
+    } else if parser.at(TokenKind::Minus) {
+        Some(BinaryOp::Sub)
+    } else if parser.at(TokenKind::Slash) {
+        Some(BinaryOp::Div)
+    } else if parser.at(TokenKind::Star) {
+        Some(BinaryOp::Mul)
+    } else if parser.at(TokenKind::Percent) {
+        Some(BinaryOp::Rem)
+    } else if parser.at(TokenKind::AmpersandAmpersand) {
+        Some(BinaryOp::And)
+    } else if parser.at(TokenKind::BarBar) {
+        Some(BinaryOp::Or)
+    } else if parser.at(TokenKind::LessThan) {
+        Some(BinaryOp::Lt)
+    } else if parser.at(TokenKind::LessThanEqual) {
+        Some(BinaryOp::Le)
+    } else if parser.at(TokenKind::GreaterThan) {
+        Some(BinaryOp::Gt)
+    } else if parser.at(TokenKind::GreaterThanEqual) {
+        Some(BinaryOp::Ge)
+    } else if parser.at(TokenKind::EqualsEquals) {
+        Some(BinaryOp::Eq)
+    } else if parser.at(TokenKind::BangEquals) {
+        Some(BinaryOp::Ne)
+    } else {
+        None
+    }
 }
 
 /// Parses the left hand side of an expression
@@ -305,6 +356,21 @@ Root@0..7
     }
 
     #[test]
+    fn check_rem_expr() {
+        check(
+            "1%2",
+            expect![[r#"
+Root@0..3
+  InfixExpr@0..3
+    Literal@0..1
+      Integer@0..1 "1"
+    Percent@1..2 "%"
+    Literal@2..3
+      Integer@2..3 "2""#]],
+        )
+    }
+
+    #[test]
     fn parse_infix_expression_with_whitespace() {
         check(
             " 1 +   2* 3 ",
@@ -444,7 +510,7 @@ Root@0..4
     LParen@0..1 "("
     VariableRef@1..4
       Ident@1..4 "foo"
-error at 1..4: expected `+`, `-`, `*`, `/` or `)`"#]],
+error at 1..4: expected `+`, `-`, `/`, `*`, `%`, `&&`, `||`, `<`, `<=`, `>`, `>=`, `==`, `!=` or `)`"#]],
         );
     }
 

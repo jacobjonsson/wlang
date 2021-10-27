@@ -45,7 +45,19 @@ impl BinaryExpr {
             .find(|token| {
                 matches!(
                     token.kind(),
-                    SyntaxKind::Plus | SyntaxKind::Minus | SyntaxKind::Star | SyntaxKind::Slash
+                    SyntaxKind::Plus
+                        | SyntaxKind::Minus
+                        | SyntaxKind::Star
+                        | SyntaxKind::Slash
+                        | SyntaxKind::Percent
+                        | SyntaxKind::AmpersandAmpersand
+                        | SyntaxKind::BarBar
+                        | SyntaxKind::BangEquals
+                        | SyntaxKind::EqualsEquals
+                        | SyntaxKind::LessThan
+                        | SyntaxKind::LessThanEqual
+                        | SyntaxKind::GreaterThan
+                        | SyntaxKind::GreaterThanEqual
                 )
             })
     }

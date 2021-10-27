@@ -14,14 +14,34 @@ fn main() -> io::Result<()> {
         stdin.read_line(&mut input)?;
 
         let parse = parse(&input);
-        println!("{}", parse.debug_tree());
+        input.clear();
 
-        let syntax = parse.syntax();
+        if parse.errors().len() > 0 {
+            println!("Found errors:");
+            for error in parse.errors() {
+                println!("{}", error);
+            }
 
-        for error in ast_validation::validate(&syntax) {
-            println!("{}", error);
+            continue;
         }
 
-        input.clear();
+        let syntax = parse.syntax();
+        let ast = ast::Root::cast(syntax.clone());
+
+        let errors = ast_validation::validate(&syntax);
+        if errors.len() > 0 {
+            println!("Found errors:");
+            for error in errors {
+                println!("{}", error);
+            }
+
+            continue;
+        }
+
+        let (database, hir) = ast_lowering::lower_root(ast.unwrap());
+
+        let source = codegen_js::generate(hir, database);
+
+        println!("Source: {}", source);
     }
 }

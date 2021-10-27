@@ -65,8 +65,6 @@ export comp MyApp(onClick: () -> ()) {
 
         Text("My text", padding: "10px")
 
-        <p padding="small" class="p-10">My text</p>
-
         .p-10 {
             padding: 10px;
         }
