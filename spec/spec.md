@@ -47,13 +47,12 @@ export comp MyApp(onClick: () -> ()) {
         console.log("Component is about to be destroyed);
     }
 
-    VStack {
-        HStack {
-            Profile()
-        }
-    }
-
     VStack(
+        name: "email",
+        padding: "small"
+        style: {
+            padding: 10px,
+        }
         screen: {
             small: {spacing: theme.spacing.small}
             medium: {spacing: theme.spacing.medium},
@@ -62,6 +61,14 @@ export comp MyApp(onClick: () -> ()) {
     ) {
         HStack(spacing: theme.spacing.xs) {
             H1("Count ${count}", color: theme.colors.gray500, fontWeight: theme.font.normal).
+        }
+
+        Text("My text", padding: "10px")
+
+        <p padding="small" class="p-10">My text</p>
+
+        .p-10 {
+            padding: 10px;
         }
 
         Button(

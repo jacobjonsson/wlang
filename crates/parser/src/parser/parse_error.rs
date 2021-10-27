@@ -98,12 +98,12 @@ mod tests {
     fn multiple_expected_did_find() {
         check(
             vec![
-                TokenKind::LiteralInteger,
+                TokenKind::Integer,
                 TokenKind::Ident,
                 TokenKind::Minus,
                 TokenKind::LParen,
             ],
-            Some(TokenKind::Let),
+            Some(TokenKind::LetKeyword),
             100..105,
             "error at 100..105: expected number, identifier, `-` or `(`, but found let",
         );

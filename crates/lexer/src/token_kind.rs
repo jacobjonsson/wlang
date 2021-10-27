@@ -23,16 +23,16 @@ pub enum TokenKind {
     Ident,
 
     #[regex("[0-9]+")]
-    LiteralInteger,
+    Integer,
 
     #[regex("\"(\\\\.|[^\"\\\\])*\"")]
-    LiteralString,
+    String,
 
     #[token("true")]
-    LiteralTrue,
+    True,
 
     #[token("false")]
-    LiteralFalse,
+    False,
 
     #[token("(")]
     LParen,
@@ -67,15 +67,32 @@ pub enum TokenKind {
     #[token("=")]
     Equals,
 
-    // Keywords
     #[token("func")]
-    Func,
+    FuncKeyword,
 
     #[token("comp")]
-    Comp,
+    CompKeyword,
 
     #[token("let")]
-    Let,
+    LetKeyword,
+
+    #[token("state")]
+    StateKeyword,
+
+    #[token("mut")]
+    MutKeyword,
+
+    #[token("effect")]
+    EffectKeyword,
+
+    #[token("onMount")]
+    OnMountKeyword,
+
+    #[token("onUpdate")]
+    OnUpdateKeyword,
+
+    #[token("onDestroy")]
+    OnDestroyKeyword,
 
     #[error]
     Error,
@@ -90,18 +107,15 @@ impl TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::LiteralFalse => "false",
-            Self::LiteralTrue => "true",
+            Self::False => "false",
+            Self::True => "true",
             Self::Whitespace => "whitespace",
             Self::Comma => "`,`",
             Self::Colon => "`:`",
             Self::Semicolon => "`;`",
-            Self::Func => "func",
-            Self::Comp => "Comp",
-            Self::Let => "let",
             Self::Ident => "identifier",
-            Self::LiteralInteger => "number",
-            Self::LiteralString => "string literal",
+            Self::Integer => "number",
+            Self::String => "string literal",
             Self::Plus => "`+`",
             Self::Minus => "`-`",
             Self::Star => "`*`",
@@ -113,6 +127,15 @@ impl fmt::Display for TokenKind {
             Self::RBrace => "`}`",
             Self::LBracket => "`[`",
             Self::RBracket => "`]`",
+            Self::FuncKeyword => "func",
+            Self::CompKeyword => "Comp",
+            Self::LetKeyword => "let",
+            Self::StateKeyword => "state",
+            Self::MutKeyword => "mut",
+            Self::EffectKeyword => "effect",
+            Self::OnMountKeyword => "onMount",
+            Self::OnUpdateKeyword => "onUpdate",
+            Self::OnDestroyKeyword => "onDestroy",
             Self::Comment => "comment",
             Self::Error => "an unrecognized token",
         })

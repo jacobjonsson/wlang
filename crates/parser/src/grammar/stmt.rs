@@ -5,7 +5,7 @@ use lexer::TokenKind;
 use syntax::SyntaxKind;
 
 pub(super) fn stmt(parser: &mut Parser) -> Option<CompletedMarker> {
-    if parser.at(TokenKind::Let) {
+    if parser.at(TokenKind::LetKeyword) {
         Some(variable_def(parser))
     } else {
         expr(parser)
@@ -13,7 +13,7 @@ pub(super) fn stmt(parser: &mut Parser) -> Option<CompletedMarker> {
 }
 
 fn variable_def(parser: &mut Parser) -> CompletedMarker {
-    assert!(parser.at(TokenKind::Let));
+    assert!(parser.at(TokenKind::LetKeyword));
     let marker = parser.start();
     parser.bump();
 
@@ -87,8 +87,8 @@ Root@0..11
     Whitespace@5..6 " "
     Equals@6..7 "="
     Whitespace@7..8 " "
-    LiteralInteger@8..10
-      Number@8..9 "1"
+    Literal@8..10
+      Integer@8..9 "1"
       Whitespace@9..10 "\n"
   VariableRef@10..11
     Ident@10..11 "a""#]],

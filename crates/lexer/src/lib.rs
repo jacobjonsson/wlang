@@ -82,12 +82,12 @@ mod tests {
 
     #[test]
     fn lex_func() {
-        check("func", TokenKind::Func);
+        check("func", TokenKind::FuncKeyword);
     }
 
     #[test]
     fn lex_comp() {
-        check("comp", TokenKind::Comp);
+        check("comp", TokenKind::CompKeyword);
     }
 
     #[test]
@@ -112,12 +112,12 @@ mod tests {
 
     #[test]
     fn lex_string_literal() {
-        check("\"hello world\"", TokenKind::LiteralString);
+        check("\"hello world\"", TokenKind::String);
     }
 
     #[test]
     fn lex_number() {
-        check("12345", TokenKind::LiteralInteger);
+        check("12345", TokenKind::Integer);
     }
 
     #[test]
@@ -173,6 +173,26 @@ mod tests {
     #[test]
     fn lex_right_bracket() {
         check("]", TokenKind::RBracket);
+    }
+
+    #[test]
+    fn lex_effect_keyword() {
+        check("effect", TokenKind::EffectKeyword);
+    }
+
+    #[test]
+    fn lex_on_mount_keyword() {
+        check("onMount", TokenKind::OnMountKeyword);
+    }
+
+    #[test]
+    fn lex_on_update_keyword() {
+        check("onUpdate", TokenKind::OnUpdateKeyword);
+    }
+
+    #[test]
+    fn lex_on_destroy_keyword() {
+        check("onDestroy", TokenKind::OnDestroyKeyword);
     }
 
     #[test]

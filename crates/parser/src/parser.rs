@@ -10,7 +10,7 @@ pub(crate) use parse_error::ParseError;
 use std::mem;
 use syntax::SyntaxKind;
 
-const RECOVERY_SET: [TokenKind; 1] = [TokenKind::Let];
+const RECOVERY_SET: [TokenKind; 1] = [TokenKind::LetKeyword];
 
 pub struct Parser<'t, 'input> {
     source: Source<'t, 'input>,
