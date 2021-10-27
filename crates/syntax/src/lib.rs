@@ -22,7 +22,7 @@ pub enum SyntaxKind {
     Error,
     Root,
     InfixExpr,
-    Literal,
+    LiteralInteger,
     ParenExpr,
     PrefixExpr,
     VariableRef,

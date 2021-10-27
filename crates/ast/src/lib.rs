@@ -37,7 +37,7 @@ impl VariableDef {
 #[derive(Debug)]
 pub enum Expr {
     BinaryExpr(BinaryExpr),
-    Literal(Literal),
+    LiteralInteger(LiteralInteger),
     ParenExpr(ParenExpr),
     UnaryExpr(UnaryExpr),
     VariableRef(VariableRef),
@@ -47,7 +47,7 @@ impl Expr {
     pub fn cast(node: SyntaxNode) -> Option<Self> {
         let result = match node.kind() {
             SyntaxKind::InfixExpr => Self::BinaryExpr(BinaryExpr(node)),
-            SyntaxKind::Literal => Self::Literal(Literal(node)),
+            SyntaxKind::LiteralInteger => Self::LiteralInteger(LiteralInteger(node)),
             SyntaxKind::ParenExpr => Self::ParenExpr(ParenExpr(node)),
             SyntaxKind::PrefixExpr => Self::UnaryExpr(UnaryExpr(node)),
             SyntaxKind::VariableRef => Self::VariableRef(VariableRef(node)),
@@ -84,11 +84,11 @@ impl BinaryExpr {
 }
 
 #[derive(Debug)]
-pub struct Literal(SyntaxNode);
+pub struct LiteralInteger(SyntaxNode);
 
-impl Literal {
+impl LiteralInteger {
     pub fn cast(node: SyntaxNode) -> Option<Self> {
-        if node.kind() == SyntaxKind::Literal {
+        if node.kind() == SyntaxKind::LiteralInteger {
             Some(Self(node))
         } else {
             None

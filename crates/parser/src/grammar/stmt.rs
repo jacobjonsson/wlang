@@ -87,7 +87,7 @@ Root@0..11
     Whitespace@5..6 " "
     Equals@6..7 "="
     Whitespace@7..8 " "
-    Literal@8..10
+    LiteralInteger@8..10
       Number@8..9 "1"
       Whitespace@9..10 "\n"
   VariableRef@10..11

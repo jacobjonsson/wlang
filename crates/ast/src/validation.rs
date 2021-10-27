@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::Literal;
+use crate::LiteralInteger;
 use syntax::SyntaxNode;
 use text_size::TextRange;
 
@@ -43,15 +43,15 @@ pub fn validate(node: &SyntaxNode) -> Vec<ValidationError> {
     let mut errors = Vec::new();
 
     for node in node.descendants() {
-        if let Some(literal) = Literal::cast(node) {
-            validate_literal(literal, &mut errors);
+        if let Some(literal) = LiteralInteger::cast(node) {
+            validate_literal_integer(literal, &mut errors);
         }
     }
 
     errors
 }
 
-fn validate_literal(literal: Literal, errors: &mut Vec<ValidationError>) {
+fn validate_literal_integer(literal: LiteralInteger, errors: &mut Vec<ValidationError>) {
     if literal.parse().is_none() {
         errors.push(ValidationError {
             kind: ValidationErrorKind::NumberLiteralTooLarge,
