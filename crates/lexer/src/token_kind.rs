@@ -66,6 +66,30 @@ pub enum TokenKind {
     #[token("=")]
     Equals,
 
+    #[token("!=")]
+    BangEquals,
+
+    #[token("!")]
+    Bang,
+
+    #[token(">")]
+    GreaterThan,
+
+    #[token(">=")]
+    GreaterThanEqual,
+
+    #[token("<")]
+    LessThan,
+
+    #[token("<=")]
+    LessThanEqual,
+
+    #[token("&&")]
+    AmpersandAmpersand,
+
+    #[token("||")]
+    BarBar,
+
     #[token("func")]
     FuncKeyword,
 
@@ -106,37 +130,45 @@ impl TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::False => "false",
-            Self::True => "true",
-            Self::Whitespace => "whitespace",
-            Self::Comma => "`,`",
+            Self::AmpersandAmpersand => "`&&`",
+            Self::Bang => "`!`",
+            Self::BangEquals => "`!=`",
+            Self::BarBar => "`||`",
             Self::Colon => "`:`",
-            Self::Semicolon => "`;`",
+            Self::Comma => "`,`",
+            Self::Comment => "comment",
+            Self::CompKeyword => "Comp",
+            Self::EffectKeyword => "effect",
+            Self::Equals => "`=`",
+            Self::Error => "an unrecognized token",
+            Self::False => "false",
+            Self::FuncKeyword => "func",
+            Self::GreaterThan => "`>`",
+            Self::GreaterThanEqual => "`>=`",
             Self::Ident => "identifier",
             Self::Integer => "number",
-            Self::String => "string",
-            Self::Plus => "`+`",
-            Self::Minus => "`-`",
-            Self::Star => "`*`",
-            Self::Slash => "`/`",
-            Self::Equals => "`=`",
-            Self::LParen => "`(`",
-            Self::RParen => "`)`",
             Self::LBrace => "`{`",
-            Self::RBrace => "`}`",
             Self::LBracket => "`[`",
-            Self::RBracket => "`]`",
-            Self::FuncKeyword => "func",
-            Self::CompKeyword => "Comp",
+            Self::LessThan => "`<`",
+            Self::LessThanEqual => "`<=`",
             Self::LetKeyword => "let",
-            Self::StateKeyword => "state",
+            Self::LParen => "`(`",
+            Self::Minus => "`-`",
             Self::MutKeyword => "mut",
-            Self::EffectKeyword => "effect",
+            Self::OnDestroyKeyword => "onDestroy",
             Self::OnMountKeyword => "onMount",
             Self::OnUpdateKeyword => "onUpdate",
-            Self::OnDestroyKeyword => "onDestroy",
-            Self::Comment => "comment",
-            Self::Error => "an unrecognized token",
+            Self::Plus => "`+`",
+            Self::RBrace => "`}`",
+            Self::RBracket => "`]`",
+            Self::RParen => "`)`",
+            Self::Semicolon => "`;`",
+            Self::Slash => "`/`",
+            Self::Star => "`*`",
+            Self::StateKeyword => "state",
+            Self::String => "string",
+            Self::True => "true",
+            Self::Whitespace => "whitespace",
         })
     }
 }

@@ -146,6 +146,46 @@ mod tests {
     }
 
     #[test]
+    fn lex_bang() {
+        check("!", TokenKind::Bang);
+    }
+
+    #[test]
+    fn lex_bang_equals() {
+        check("!=", TokenKind::BangEquals);
+    }
+
+    #[test]
+    fn lex_less_than() {
+        check("<", TokenKind::LessThan);
+    }
+
+    #[test]
+    fn lex_less_than_equals() {
+        check("<=", TokenKind::LessThanEqual);
+    }
+
+    #[test]
+    fn lex_greater_than() {
+        check(">", TokenKind::GreaterThan);
+    }
+
+    #[test]
+    fn lex_greater_than_equals() {
+        check(">=", TokenKind::GreaterThanEqual);
+    }
+
+    #[test]
+    fn lex_ampersand_ampersand() {
+        check("&&", TokenKind::AmpersandAmpersand);
+    }
+
+    #[test]
+    fn lex_bar_bar() {
+        check("||", TokenKind::BarBar);
+    }
+
+    #[test]
     fn lex_left_paren() {
         check("(", TokenKind::LParen);
     }

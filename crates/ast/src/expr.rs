@@ -1,6 +1,6 @@
 use syntax::{SyntaxElement, SyntaxKind, SyntaxNode, SyntaxToken};
 
-use crate::Integer;
+use crate::token;
 
 #[derive(Debug)]
 pub enum Expr {
@@ -53,7 +53,9 @@ impl BinaryExpr {
 
 #[derive(Debug)]
 pub enum LiteralKind {
-    Integer(Integer),
+    Integer(token::Integer),
+    String(token::String),
+    Bool(bool),
 }
 
 #[derive(Debug)]
@@ -71,11 +73,19 @@ impl Literal {
     pub fn kind(&self) -> LiteralKind {
         let token = self.first_token().unwrap();
 
-        if let Some(t) = Integer::cast(token.clone()) {
+        if let Some(t) = token::Integer::cast(token.clone()) {
             return LiteralKind::Integer(t);
         }
 
-        unreachable!()
+        if let Some(t) = token::String::cast(token.clone()) {
+            return LiteralKind::String(t);
+        }
+
+        match token.kind() {
+            SyntaxKind::True => LiteralKind::Bool(true),
+            SyntaxKind::False => LiteralKind::Bool(false),
+            _ => unreachable!(),
+        }
     }
 
     pub fn first_token(&self) -> Option<SyntaxToken> {

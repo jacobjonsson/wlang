@@ -61,6 +61,8 @@ fn validate_literal(literal: Literal, errors: &mut Vec<ValidationError>) {
                 })
             }
         }
+        LiteralKind::Bool(_) => {}
+        LiteralKind::String(_) => {}
     };
 }
 
