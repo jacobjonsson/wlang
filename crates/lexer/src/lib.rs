@@ -248,10 +248,6 @@ fn is_digit(ch: char) -> bool {
     ch.is_ascii_digit()
 }
 
-fn is_not_digit(ch: char) -> bool {
-    !is_digit(ch)
-}
-
 fn is_identifier(ch: char) -> bool {
     match ch {
         'a'..='z' | 'A'..='Z' => true,
