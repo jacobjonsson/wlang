@@ -1,247 +1,264 @@
-mod token_kind;
+#[cfg(test)]
+mod test;
 
-use logos::Logos;
-use std::ops::Range as StdRange;
-use text_size::{TextRange, TextSize};
-pub use token_kind::TokenKind;
+use std::str::Chars;
 
-pub struct Lexer<'a> {
-    inner: logos::Lexer<'a, TokenKind>,
+use syntax::{SyntaxKind, Token};
+
+#[derive(Debug)]
+pub struct SyntaxError {
+    kind: SyntaxErrorKind,
+    start: usize,
+    end: usize,
 }
 
-impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Lexer {
-        Lexer {
-            inner: TokenKind::lexer(input),
+#[derive(Debug, PartialEq)]
+pub enum SyntaxErrorKind {
+    UnclosedStringLiteral,
+}
+
+/// Tokenize the entire source file into a vector
+pub fn tokenize_file(source: &str) -> (Vec<Token>, Vec<SyntaxError>) {
+    if source.is_empty() {
+        Default::default()
+    }
+
+    let mut tokens = Vec::new();
+    let mut errors = Vec::new();
+    let mut offset = 0;
+
+    for (token, error) in tokenize(source) {
+        let token_len = token.len;
+        let new_offset = offset + token_len;
+
+        tokens.push(token);
+
+        if let Some(error) = error {
+            errors.push(SyntaxError {
+                kind: error,
+                start: offset,
+                end: new_offset,
+            });
+        }
+
+        offset = new_offset;
+    }
+
+    todo!()
+}
+
+/// Tokenize returns an iterator over the string
+/// Calling each will return a token and an optional error message
+pub fn tokenize(mut source: &str) -> impl Iterator<Item = (Token, Option<SyntaxErrorKind>)> + '_ {
+    std::iter::from_fn(move || {
+        if source.is_empty() {
+            return None;
+        }
+
+        let (token, err) = lex(source);
+        source = &source[token.len as usize..];
+        Some((token, err))
+    })
+}
+
+fn lex(source: &str) -> (Token, Option<SyntaxErrorKind>) {
+    assert!(!source.is_empty());
+
+    if source.starts_with(is_whitespace) {
+        (
+            Token {
+                kind: SyntaxKind::Whitespace,
+                len: source
+                    .find(is_not_whitespace)
+                    .unwrap_or_else(|| source.len()),
+            },
+            None,
+        )
+    } else if source.starts_with(is_digit) {
+        (consume_integer_or_float(source), None)
+    } else if source.starts_with(is_identifier) {
+        (
+            Token {
+                kind: SyntaxKind::Identifier,
+                len: source
+                    .find(is_not_identifier)
+                    .unwrap_or_else(|| source.len()),
+            },
+            None,
+        )
+    } else if source.starts_with('"') {
+        consume_string(source)
+    } else if source.starts_with('/') {
+        consume_comment_or_slash(source)
+    } else {
+        let ch = source.chars().next().unwrap();
+        (
+            Token {
+                kind: match ch {
+                    '(' => SyntaxKind::LeftParen,
+                    ')' => SyntaxKind::RightParen,
+                    '{' => SyntaxKind::LeftBrace,
+                    '}' => SyntaxKind::RightBrace,
+                    '[' => SyntaxKind::LeftBracket,
+                    ']' => SyntaxKind::RightBracket,
+                    '+' => SyntaxKind::Plus,
+                    '-' => SyntaxKind::Minus,
+                    '*' => SyntaxKind::Star,
+                    '%' => SyntaxKind::Percent,
+                    _ => SyntaxKind::Error,
+                },
+                len: ch.len_utf8(),
+            },
+            None,
+        )
+    }
+}
+
+/// Either consumes a comment or a single slash
+/// This function assumes that the leading slash has been verified.
+fn consume_comment_or_slash(source: &str) -> (Token, Option<SyntaxErrorKind>) {
+    let mut chars = source.chars();
+
+    // If the second char in the iterator is not a slash then it's not a comment
+    if chars.clone().nth(1) != Some('/') {
+        return (
+            Token {
+                kind: SyntaxKind::Slash,
+                // Is this always valid..?
+                len: 1,
+            },
+            None,
+        );
+    }
+
+    let initial_len = source.len();
+
+    chars.next(); // The leading slash
+    chars.next(); // The second slash
+
+    // Keep looping until we hit a newline or eof
+    loop {
+        match chars.next() {
+            None | Some('\n') => {
+                return (
+                    Token {
+                        kind: SyntaxKind::Comment,
+                        len: initial_len - chars.as_str().len(),
+                    },
+                    None,
+                )
+            }
+
+            _ => {}
         }
     }
 }
 
-impl<'a> Iterator for Lexer<'a> {
-    type Item = Token<'a>;
+fn consume_integer_or_float(source: &str) -> Token {
+    let mut chars = source.chars();
+    let initial_len = source.len();
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let kind = self.inner.next()?;
-        let text = self.inner.slice();
+    // Eat all the decimal digits
+    eat_decimal_digits(&mut chars);
 
-        let range = {
-            let StdRange { start, end } = self.inner.span();
-            let start = TextSize::try_from(start).unwrap();
-            let end = TextSize::try_from(end).unwrap();
+    match (chars.clone().next(), chars.clone().nth(1)) {
+        (Some('.'), Some('0'..='9')) => {
+            // Eat the leading dot.
+            chars.next();
+            eat_decimal_digits(&mut chars);
+            Token {
+                kind: SyntaxKind::Float,
+                len: initial_len - chars.as_str().len(),
+            }
+        }
 
-            TextRange::new(start, end)
-        };
+        (Some('e' | 'E'), _) => todo!("Exponents are not supported yet"),
 
-        Some(Self::Item { kind, text, range })
+        _ => Token {
+            kind: SyntaxKind::Integer,
+            len: initial_len - chars.as_str().len(),
+        },
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Token<'a> {
-    pub kind: TokenKind,
-    pub text: &'a str,
-    pub range: TextRange,
+/// Consumes decimal digits
+fn eat_decimal_digits<'a>(chars: &mut Chars<'a>) {
+    loop {
+        match chars.clone().next() {
+            Some('_') => {
+                chars.next();
+            }
+            Some('0'..='9') => {
+                chars.next();
+            }
+            _ => break,
+        }
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Eats a string until it reaches the end character
+fn consume_string(source: &str) -> (Token, Option<SyntaxErrorKind>) {
+    let mut chars = source.chars();
+    let initial_len = source.len();
 
-    fn check(input: &str, kind: TokenKind) {
-        let mut lexer = Lexer::new(input);
+    // Eat the initial character
+    chars.next();
 
-        let token = lexer.next().unwrap();
-        assert_eq!(token.kind, kind);
-        assert_eq!(token.text, input);
+    loop {
+        match chars.next() {
+            // An backslash escapes any subsequent character
+            Some('\\') => {
+                chars.next(); // The the subsequent char;
+            }
+
+            Some('"') => {
+                return (
+                    Token {
+                        kind: SyntaxKind::String,
+                        len: initial_len - chars.as_str().len(),
+                    },
+                    None,
+                );
+            }
+
+            Some(_) => {}
+
+            None => {
+                return (
+                    Token {
+                        kind: SyntaxKind::String,
+                        len: initial_len - chars.as_str().len(),
+                    },
+                    Some(SyntaxErrorKind::UnclosedStringLiteral),
+                )
+            }
+        }
     }
+}
 
-    #[test]
-    fn lex_spaces_and_newlines() {
-        check("  \n ", TokenKind::Whitespace);
-    }
+fn is_whitespace(ch: char) -> bool {
+    ch.is_whitespace()
+}
 
-    #[test]
-    fn lex_spaces() {
-        check("   ", TokenKind::Whitespace);
-    }
+fn is_not_whitespace(ch: char) -> bool {
+    !is_whitespace(ch)
+}
 
-    #[test]
-    fn lex_comma() {
-        check(",", TokenKind::Comma);
-    }
+fn is_digit(ch: char) -> bool {
+    ch.is_ascii_digit()
+}
 
-    #[test]
-    fn lex_semicolon() {
-        check(";", TokenKind::Semicolon);
-    }
+fn is_not_digit(ch: char) -> bool {
+    !is_digit(ch)
+}
 
-    #[test]
-    fn lex_colon() {
-        check(":", TokenKind::Colon);
+fn is_identifier(ch: char) -> bool {
+    match ch {
+        'a'..='z' | 'A'..='Z' => true,
+        _ => false,
     }
+}
 
-    #[test]
-    fn lex_func() {
-        check("func", TokenKind::FuncKeyword);
-    }
-
-    #[test]
-    fn lex_comp() {
-        check("comp", TokenKind::CompKeyword);
-    }
-
-    #[test]
-    fn lex_percent() {
-        check("%", TokenKind::Percent);
-    }
-
-    #[test]
-    fn lex_single_character_identifier() {
-        check("a", TokenKind::Ident);
-    }
-
-    #[test]
-    fn lex_alphabetic_identifier() {
-        check("abcd", TokenKind::Ident);
-    }
-
-    #[test]
-    fn lex_alphanumeric_identifier() {
-        check("abcd1234", TokenKind::Ident);
-    }
-
-    #[test]
-    fn lex_underscore_identifier() {
-        check("__abc123", TokenKind::Ident);
-    }
-
-    #[test]
-    fn lex_string_literal() {
-        check("\"hello world\"", TokenKind::String);
-    }
-
-    #[test]
-    fn lex_number() {
-        check("12345", TokenKind::Integer);
-    }
-
-    #[test]
-    fn lex_plus() {
-        check("+", TokenKind::Plus);
-    }
-
-    #[test]
-    fn lex_minus() {
-        check("-", TokenKind::Minus);
-    }
-
-    #[test]
-    fn lex_star() {
-        check("*", TokenKind::Star);
-    }
-
-    #[test]
-    fn lex_slash() {
-        check("/", TokenKind::Slash);
-    }
-
-    #[test]
-    fn lex_equals() {
-        check("=", TokenKind::Equals);
-    }
-
-    #[test]
-    fn lex_bang() {
-        check("!", TokenKind::Bang);
-    }
-
-    #[test]
-    fn lex_bang_equals() {
-        check("!=", TokenKind::BangEquals);
-    }
-
-    #[test]
-    fn lex_less_than() {
-        check("<", TokenKind::LessThan);
-    }
-
-    #[test]
-    fn lex_less_than_equals() {
-        check("<=", TokenKind::LessThanEqual);
-    }
-
-    #[test]
-    fn lex_greater_than() {
-        check(">", TokenKind::GreaterThan);
-    }
-
-    #[test]
-    fn lex_greater_than_equals() {
-        check(">=", TokenKind::GreaterThanEqual);
-    }
-
-    #[test]
-    fn lex_ampersand_ampersand() {
-        check("&&", TokenKind::AmpersandAmpersand);
-    }
-
-    #[test]
-    fn lex_bar_bar() {
-        check("||", TokenKind::BarBar);
-    }
-
-    #[test]
-    fn lex_left_paren() {
-        check("(", TokenKind::LParen);
-    }
-
-    #[test]
-    fn lex_right_paren() {
-        check(")", TokenKind::RParen);
-    }
-
-    #[test]
-    fn lex_left_brace() {
-        check("{", TokenKind::LBrace);
-    }
-
-    #[test]
-    fn lex_right_brace() {
-        check("}", TokenKind::RBrace);
-    }
-
-    #[test]
-    fn lex_left_bracket() {
-        check("[", TokenKind::LBracket);
-    }
-
-    #[test]
-    fn lex_right_bracket() {
-        check("]", TokenKind::RBracket);
-    }
-
-    #[test]
-    fn lex_effect_keyword() {
-        check("effect", TokenKind::EffectKeyword);
-    }
-
-    #[test]
-    fn lex_on_mount_keyword() {
-        check("onMount", TokenKind::OnMountKeyword);
-    }
-
-    #[test]
-    fn lex_on_update_keyword() {
-        check("onUpdate", TokenKind::OnUpdateKeyword);
-    }
-
-    #[test]
-    fn lex_on_destroy_keyword() {
-        check("onDestroy", TokenKind::OnDestroyKeyword);
-    }
-
-    #[test]
-    fn lex_comment() {
-        check("// foo", TokenKind::Comment);
-    }
+fn is_not_identifier(ch: char) -> bool {
+    !is_identifier(ch)
 }
